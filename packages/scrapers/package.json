@@ -1,0 +1,24 @@
+{
+  "name": "@cash-mgmt/scrapers",
+  "version": "2.0.0",
+  "description": "Web scrapers for financial institutions",
+  "type": "commonjs",
+  "main": "./src/runners/cli-runner.js",
+  "scripts": {
+    "test:ajbell": "node src/runners/cli-runner.js ajbell --test",
+    "test:flagstone": "node src/runners/cli-runner.js flagstone --test",
+    "test:hl": "node src/runners/cli-runner.js hl --test",
+    "test:moneyfacts": "node src/runners/cli-runner.js moneyfacts --test"
+  },
+  "dependencies": {
+    "@cash-mgmt/shared": "*",
+    "playwright": "^1.40.0",
+    "better-sqlite3": "^12.4.1",
+    "sqlite3": "^5.1.6",
+    "fast-levenshtein": "^3.0.0",
+    "json-rules-engine": "^6.4.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^21.0.0"
+  }
+}
