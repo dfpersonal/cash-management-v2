@@ -103,18 +103,25 @@
 **Goal**: Extract scrapers, pipeline, and optimization into separate packages
 
 ### 2.1 Migrate `@cash-mgmt/scrapers` (1-2 days)
-- ⬜ Create `packages/scrapers/` structure
-- ⬜ Copy 31 scraper files (all native JavaScript)
-  - ⬜ Scraper implementations (4 files)
-  - ⬜ Parsers (3 files)
-  - ⬜ Core modules (3 files)
-  - ⬜ Utilities (5 files)
-  - ⬜ Runners (2 files)
-  - ⬜ FRN management SQL & docs (11 files)
-- ⬜ Create `package.json` with Playwright dependency
-- ⬜ Add workspace dependency: `@cash-mgmt/shared`
-- ⬜ Run test scrapers
-- ⬜ Commit: `feat(scrapers): Extract scrapers to dedicated package`
+- ✅ Create `packages/scrapers/` structure
+- ✅ Copy 34 scraper files (all native JavaScript)
+  - ✅ Scraper implementations (4 files)
+  - ✅ Parsers (3 files)
+  - ✅ Core modules (3 files)
+  - ✅ Utilities (5 files)
+  - ✅ Runners (2 files)
+  - ✅ FRN management SQL & docs (11 files)
+  - ✅ Config & docs (3 files: environments.js, README.md, .gitignore)
+- ✅ Create `package.json` with Playwright & Puppeteer dependencies
+- ✅ Add workspace dependency: `@cash-mgmt/shared: "*"` (npm format, not pnpm)
+- ✅ Set package type to "module" for ES6 imports
+- ✅ Remove dead code from Flagstone scraper (47 lines)
+- ✅ Upgrade Puppeteer from 21.0.0 to 24.23.0
+- ✅ Test AJ Bell scraper - extracted 41 products successfully
+- ✅ Commit: `feat(scrapers): Extract scrapers to dedicated package` (1ee9a1c)
+- ✅ Commit: `refactor(scrapers): Remove dead database code` (5d8d4a4)
+- ✅ Commit: `fix(scrapers): Set package type to module` (8b77f38)
+- ✅ Commit: `chore(scrapers): Upgrade Puppeteer to 24.23.0` (44db10a)
 
 ### 2.2 Migrate `@cash-mgmt/pipeline` (2-3 days)
 - ⬜ Create `packages/pipeline/` structure
@@ -430,11 +437,13 @@ Track any issues encountered during migration:
 |-------|--------------|-------------|------------|----------|--------|
 | Phase 0: Preparation | 1 | 0.5 | 2025-10-08 | 2025-10-08 | ✅ |
 | Phase 1: Foundation | 2-3 | 1 | 2025-10-08 | 2025-10-08 | ✅ |
-| Phase 2: Component Extraction | 5-7 | | | | ⬜ |
+| Phase 2.1: Scrapers | 1-2 | 0.5 | 2025-10-08 | 2025-10-08 | ✅ |
+| Phase 2.2: Pipeline | 2-3 | | | | ⬜ |
+| Phase 2.3: Optimization | 1-2 | | | | ⬜ |
 | Phase 3: Electron App | 5-7 | | | | ⬜ |
 | Phase 4: Testing & Docs | 2-3 | | | | ⬜ |
 | Phase 5: Cutover | 1 | | | | ⬜ |
-| **Total** | **16-22** | **0.5** | **2025-10-08** | | |
+| **Total** | **16-22** | **2** | **2025-10-08** | | |
 
 ---
 
