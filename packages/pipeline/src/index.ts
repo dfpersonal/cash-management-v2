@@ -12,8 +12,8 @@ export { PipelineAudit } from './services/PipelineAudit';
 export * from './types/FRNMatchingConfig';
 
 // Orchestration types
-export {
-  PipelineStage,
+export { PipelineStage } from './services/OrchestrationService';
+export type {
   PipelineOptions,
   OrchestrationConfig,
   PipelineRequest,

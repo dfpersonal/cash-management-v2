@@ -1,0 +1,59 @@
+{
+  "name": "@cash-mgmt/optimization",
+  "version": "2.0.0",
+  "description": "Portfolio optimization engine with FSCS compliance and recommendation services",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "dev": "ts-node src/cli/index.ts",
+    "optimize": "ts-node src/cli/optimize-main.ts",
+    "optimize:test": "ts-node src/cli/optimize-test.ts",
+    "fscs": "ts-node src/cli/fscs-compliance.ts",
+    "fscs:check": "ts-node src/cli/fscs-compliance.ts",
+    "fscs:diversify": "ts-node src/cli/fscs-compliance.ts --diversify",
+    "fscs:full": "ts-node src/cli/fscs-compliance.ts --include-pending --diversify",
+    "test:service": "ts-node src/cli/test-recommendation-service.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "validate-migration": "./scripts/validate_migration.sh",
+    "create-dev-db": "./scripts/create_dev_database.sh"
+  },
+  "keywords": [
+    "portfolio",
+    "optimization",
+    "fscs",
+    "compliance",
+    "recommendation",
+    "typescript",
+    "cash-management"
+  ],
+  "author": "Cash Management System",
+  "license": "MIT",
+  "dependencies": {
+    "@cash-mgmt/shared": "*",
+    "commander": "^11.1.0",
+    "date-fns": "^2.30.0",
+    "decimal.js": "^10.4.3",
+    "javascript-lp-solver": "^0.4.24",
+    "json-rules-engine": "^6.6.0",
+    "lodash": "^4.17.21",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
