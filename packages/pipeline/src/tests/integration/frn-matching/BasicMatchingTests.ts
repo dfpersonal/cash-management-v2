@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import { TestDatabase } from '../helpers/TestDatabase';
-import { PipelineTestHelper } from '../utils/PipelineTestHelper';
+import { TestDatabase } from '../../helpers/TestDatabase';
+import { PipelineTestHelper } from '../../utils/PipelineTestHelper';
 import { PipelineStage } from '@cash-mgmt/pipeline';
 
 describe('FRN Matching - Basic Exact Matching', () => {
@@ -184,7 +184,7 @@ describe('FRN Matching - Basic Exact Matching', () => {
 
     // Add manual override using production method (auto-rebuilds cache)
     const overrideFRN = '999999';
-    const { FRNMatchingService } = await import('../../../shared/services/FRNMatchingService');
+    const { FRNMatchingService } = await import('../../../services/FRNMatchingService');
     const frnService = new FRNMatchingService(db);
     await frnService.loadConfiguration();
     await frnService.addManualOverride('SANTANDER', overrideFRN, 'Override Santander', 1.0, 'Test manual override');

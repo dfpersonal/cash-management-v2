@@ -116,7 +116,11 @@ export class PipelineTestHelper {
       testDb.getConnection(),
       testDb.getPath()
     );
-    this.fixturesPath = path.resolve(process.cwd(), 'src/tests/integration/fixtures');
+    this.fixturesPath = path.resolve(__dirname, '../fixtures');
+
+    // Set environment variable to point to test fixtures directory
+    // This allows JSONIngestionService to find test data instead of production scrapers/data
+    process.env.JSON_DATA_DIR = this.fixturesPath;
   }
 
   /**
@@ -149,7 +153,7 @@ export class PipelineTestHelper {
    * Rebuild FRN lookup helper cache
    */
   private async rebuildFRNLookupCache(): Promise<void> {
-    const { FRNMatchingService } = await import('../../../shared/services/FRNMatchingService');
+    const { FRNMatchingService } = await import('../../services/FRNMatchingService');
     const frnService = new FRNMatchingService(this.testDb.getConnection());
     await frnService.loadConfiguration();
     // Force rebuild for tests (don't check if config changed)
@@ -239,9 +243,11 @@ export class PipelineTestHelper {
         // Add all products from this fixture
         if (Array.isArray(fixtureData)) {
           combinedData.push(...fixtureData);
+        } else if (fixtureData.products && Array.isArray(fixtureData.products)) {
+          // Handle case where fixture is an object with metadata and products array
+          combinedData.push(...fixtureData.products);
         } else {
-          // Handle case where fixture is an object with products array
-          throw new Error(`Fixture ${fixtureName} is not an array of products`);
+          throw new Error(`Fixture ${fixtureName} is not an array of products and doesn't have a products array`);
         }
       }
 

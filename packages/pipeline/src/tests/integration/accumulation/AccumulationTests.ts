@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { TestDatabase } from '../helpers/TestDatabase';
-import { PipelineTestHelper } from '../utils/PipelineTestHelper';
+import { TestDatabase } from '../../helpers/TestDatabase';
+import { PipelineTestHelper } from '../../utils/PipelineTestHelper';
 import { PipelineStage } from '@cash-mgmt/pipeline';
 import {
   getAllFixtureCounts,
@@ -12,7 +12,7 @@ import {
   getFixtureSource,
   getFixtureMethod,
   getMethodCount
-} from '../utils/testUtils';
+} from '../../utils/testUtils';
 
 describe('Cross-Scraper Accumulation with Dynamic Counts', () => {
   let testDb: TestDatabase;

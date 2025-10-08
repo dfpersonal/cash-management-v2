@@ -342,7 +342,8 @@ export class JSONIngestionService {
       // NO hardcoded defaults - configuration MUST exist in unified_config
       const config: Partial<JSONIngestionConfig> = {
         // Directory structure (platform-specific - not from config)
-        dataDirectory: require('path').join(process.cwd(), 'scrapers', 'data'),
+        // Allow environment variable override for test fixtures directory
+        dataDirectory: process.env.JSON_DATA_DIR || require('path').join(process.cwd(), 'scrapers', 'data'),
         platformDirectories: ['ajbell', 'flagstone', 'hargreaves-lansdown', 'moneyfacts']
       };
 

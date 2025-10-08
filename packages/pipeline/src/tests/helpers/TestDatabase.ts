@@ -34,14 +34,14 @@ export class TestDatabase {
   constructor(options: TestDatabaseOptions = {}) {
     this.templateDbPath = options.templateDb ||
       process.env.DATABASE_PATH ||
-      path.resolve(process.cwd(), 'data/test/databases/cash_savings_test_phase4.db');
+      path.resolve(__dirname, '../../../data/test/databases/cash_savings_test_phase4.db');
 
     // If SHARED_TEST_DB is set, use a shared database for sequential tests
     if (process.env.SHARED_TEST_DB && !options.testDbPath) {
-      this.testDbPath = path.resolve(process.cwd(), `data/test/databases/shared_sequential_test.db`);
+      this.testDbPath = path.resolve(__dirname, '../../../data/test/databases/shared_sequential_test.db');
     } else {
       this.testDbPath = options.testDbPath ||
-        path.resolve(process.cwd(), `data/test/databases/test_${Date.now()}.db`);
+        path.resolve(__dirname, `../../../data/test/databases/test_${Date.now()}.db`);
     }
   }
 

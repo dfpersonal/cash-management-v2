@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { TestDatabase } from '../helpers/TestDatabase';
-import { PipelineTestHelper } from '../utils/PipelineTestHelper';
+import { TestDatabase } from '../../helpers/TestDatabase';
+import { PipelineTestHelper } from '../../utils/PipelineTestHelper';
 import { PipelineStage } from '@cash-mgmt/pipeline';
-import { getFixtureProductCount, clearRawTable, getRawTableCount, getValidProductCountFromAudit, getTotalProcessedCountFromAudit, getMethodRawCount } from '../utils/testUtils';
+import { getFixtureProductCount, clearRawTable, getRawTableCount, getValidProductCountFromAudit, getTotalProcessedCountFromAudit, getMethodRawCount } from '../../utils/testUtils';
 
 describe('JSON Ingestion with Metadata', () => {
   let testDb: TestDatabase;

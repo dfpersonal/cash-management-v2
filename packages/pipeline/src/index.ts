@@ -10,3 +10,13 @@ export { PipelineAudit } from './services/PipelineAudit';
 
 // Types
 export * from './types/FRNMatchingConfig';
+
+// Orchestration types
+export {
+  PipelineStage,
+  PipelineOptions,
+  OrchestrationConfig,
+  PipelineRequest,
+  OrchestratorCriticalErrorType,
+  OrchestratorCriticalError
+} from './services/OrchestrationService';

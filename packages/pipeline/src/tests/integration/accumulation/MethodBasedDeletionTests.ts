@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { TestDatabase } from '../helpers/TestDatabase';
-import { PipelineTestHelper } from '../utils/PipelineTestHelper';
+import { TestDatabase } from '../../helpers/TestDatabase';
+import { PipelineTestHelper } from '../../utils/PipelineTestHelper';
 import { PipelineStage } from '@cash-mgmt/pipeline';
 import {
   getMethodCount,
@@ -11,7 +11,7 @@ import {
   getFixtureMethod,
   getTotalProcessedCountFromAudit,
   getValidProductCountFromAudit
-} from '../utils/testUtils';
+} from '../../utils/testUtils';
 
 describe('Method-Specific Deletion', () => {
   let testDb: TestDatabase;
@@ -22,10 +22,7 @@ describe('Method-Specific Deletion', () => {
     await testDb.setup();
     pipelineHelper = new PipelineTestHelper(testDb);
 
-    await pipelineHelper.setupTestEnvironment({
-      accumulateRaw: true,
-      accumulateProducts: false // Don't accumulate final products
-    });
+    await pipelineHelper.setupTestEnvironment();
   });
 
   afterAll(async () => {

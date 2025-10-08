@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
-import { TestDatabase } from '../helpers/TestDatabase';
+import { TestDatabase } from '../../helpers/TestDatabase';
 import { JSONIngestionService } from '@cash-mgmt/pipeline';
-import { validateMetadata } from '../utils/testUtils';
+import { validateMetadata } from '../../utils/testUtils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -62,7 +62,7 @@ describe('Metadata Format Validation', () => {
     ];
 
     for (const fixture of fixtures) {
-      const filePath = path.join(__dirname, '../fixtures', fixture);
+      const filePath = path.join(__dirname, '../../fixtures', fixture);
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       const validation = validateMetadata(data);
 
