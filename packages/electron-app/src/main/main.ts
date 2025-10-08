@@ -118,7 +118,7 @@ class CashManagementApp {
   private async initializeDatabase(): Promise<void> {
     try {
       // Use DATABASE_PATH environment variable for testing, fallback to default
-      const defaultPath = path.join(__dirname, '../../data/database/cash_savings.db');
+      const defaultPath = path.join(__dirname, '../../../../data/database/cash_savings.db');
       const databasePath = process.env.DATABASE_PATH || defaultPath;
 
       // Create automatic backup on startup (only for production database)
@@ -159,7 +159,7 @@ class CashManagementApp {
       }
 
       // Use the same database path as other services
-      const defaultPath = path.join(__dirname, '../../data/database/cash_savings.db');
+      const defaultPath = path.join(__dirname, '../../../../data/database/cash_savings.db');
       const databasePath = process.env.DATABASE_PATH || defaultPath;
 
       // OrchestrationService creates its own better-sqlite3 connection
@@ -176,7 +176,7 @@ class CashManagementApp {
   private initializeScraperManager(): void {
     try {
       // Initialize scraper process manager with database path
-      const defaultPath = path.join(__dirname, '../../data/database/cash_savings.db');
+      const defaultPath = path.join(__dirname, '../../../../data/database/cash_savings.db');
       const databasePath = process.env.DATABASE_PATH || defaultPath;
       this.scraperManager = new ScraperProcessManager(databasePath);
       
@@ -210,7 +210,7 @@ class CashManagementApp {
   private initializeDocumentCleanup(): void {
     try {
       // Initialize document cleanup service with database connection
-      const defaultPath = path.join(__dirname, '../../data/database/cash_savings.db');
+      const defaultPath = path.join(__dirname, '../../../../data/database/cash_savings.db');
       const databasePath = process.env.DATABASE_PATH || defaultPath;
 
       const sqlite3 = require('sqlite3').verbose();
@@ -237,7 +237,7 @@ class CashManagementApp {
     // Register transaction handlers with database
     if (this.databaseService) {
       const sqlite3 = require('sqlite3').verbose();
-      const defaultPath = path.join(__dirname, '../../data/database/cash_savings.db');
+      const defaultPath = path.join(__dirname, '../../../../data/database/cash_savings.db');
       const dbPath = process.env.DATABASE_PATH || defaultPath;
       console.log('🗄️ Main: Transaction handlers using database path:', dbPath);
       console.log('🔧 Main: DATABASE_PATH environment variable:', process.env.DATABASE_PATH);

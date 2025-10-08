@@ -58,7 +58,7 @@ export class ScraperProcessManager extends EventEmitter {
 
   constructor(databasePath?: string) {
     super();
-    this.databasePath = databasePath || path.join(__dirname, '../../../data/database/cash_savings.db');
+    this.databasePath = databasePath || path.join(__dirname, '../../../../../data/database/cash_savings.db');
     this.loadScraperConfigs();
     this.initializeDeduplication();
   }
