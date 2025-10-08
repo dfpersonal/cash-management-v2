@@ -43,7 +43,6 @@ import {
   DataObject as JsonIcon,
 } from '@mui/icons-material';
 import { AuditEntry, AuditFilters, AuditStats } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 
 interface AuditViewerProps {
   open: boolean;

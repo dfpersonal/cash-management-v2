@@ -28,13 +28,11 @@ import type {
   DocumentValidationResult,
   DEFAULT_DOCUMENT_TYPES
 } from '@cash-mgmt/shared';
-import { DocumentTypes';
 
 import {
   FILE_SIZE_LIMITS,
   TRASH_RETENTION_DAYS
 } from '@cash-mgmt/shared';
-import { DocumentTypes';
 
 // Re-export for convenience
 export type {

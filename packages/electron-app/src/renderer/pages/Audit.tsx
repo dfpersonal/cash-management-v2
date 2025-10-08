@@ -22,7 +22,6 @@ import {
 } from '@mui/icons-material';
 import { AuditViewer } from '../components/AuditViewer';
 import { AppState, AuditStats, FieldChangeStats } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 
 interface AuditProps {
   appState: AppState;

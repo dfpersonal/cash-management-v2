@@ -12,10 +12,8 @@ import {
   CompletionData,
   TriggerScraperResponse
 } from '@cash-mgmt/shared';
-import { ScraperTypes';
-import { getDeduplicationOrchestrator, initializeDeduplicationOrchestrator } from '@cash-mgmt/shared';
+import { getDeduplicationOrchestrator, initializeDeduplicationOrchestrator } from '@cash-mgmt/pipeline';
 import { LogCategory } from '@cash-mgmt/shared';
-import { LoggingTypes';
 
 export class ScraperProcessManager extends EventEmitter {
   private processes: Map<string, ScrapingProcess> = new Map();

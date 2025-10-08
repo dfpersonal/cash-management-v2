@@ -7,7 +7,6 @@ import { FSCSComplianceService } from '../services/FSCSComplianceService';
 import { RateOptimizerService } from '../services/RateOptimizerService';
 import { ModuleResult } from '../services/SubprocessService';
 import { FSCSOptions, OptimizationOptions, ActionItemUpdate } from '@cash-mgmt/shared';
-import { OptimizationTypes';
 import { DatabaseValidator } from '@cash-mgmt/shared';
 
 // Service instances

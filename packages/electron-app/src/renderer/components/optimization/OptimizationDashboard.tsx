@@ -52,7 +52,6 @@ import ActionItemsList from './ActionItemsList';
 import OptimizationConflictDialog from './OptimizationConflictDialog';
 import { OptimizationConflictService } from '../../services/optimizationConflictService';
 import { OptimizationConflict } from '@cash-mgmt/shared';
-import { PendingMoveTypes';
 
 interface TabPanelProps {
   children?: React.ReactNode;

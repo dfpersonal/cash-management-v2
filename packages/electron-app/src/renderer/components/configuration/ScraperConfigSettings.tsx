@@ -29,7 +29,6 @@ import {
   VisibilityOff as HiddenIcon,
 } from '@mui/icons-material';
 import { Platform, ScraperConfig } from '@cash-mgmt/shared';
-import { ScraperTypes';
 
 interface ScraperWithConfig extends Platform {
   config: ScraperConfig;

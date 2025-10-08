@@ -57,7 +57,6 @@ import {
   BalanceUpdateFilters,
   BalanceUpdateStatus
 } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 
 interface BalanceCheckerProps {
   appState: AppState;

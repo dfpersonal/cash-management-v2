@@ -19,7 +19,6 @@ import {
   FILE_SIZE_LIMITS,
   SUPPORTED_MIME_TYPES
 } from '@cash-mgmt/shared';
-import { DocumentTypes';
 
 /**
  * Register all document management IPC handlers

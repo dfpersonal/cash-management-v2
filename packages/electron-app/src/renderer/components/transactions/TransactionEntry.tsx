@@ -17,7 +17,6 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { Transaction, TransactionType, TransactionForm } from '@cash-mgmt/shared';
-import { TransactionTypes';
 
 interface TransactionEntryProps {
   open: boolean;

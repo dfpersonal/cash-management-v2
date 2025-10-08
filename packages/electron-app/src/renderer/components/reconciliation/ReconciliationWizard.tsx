@@ -18,9 +18,7 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { Deposit } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 import { ReconciliationSession } from '@cash-mgmt/shared';
-import { TransactionTypes';
 import { TransactionMatching } from './TransactionMatching';
 import { StatementEntry, StatementTransaction } from './StatementEntry';
 

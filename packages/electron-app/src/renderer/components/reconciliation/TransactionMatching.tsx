@@ -27,7 +27,6 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { Transaction } from '@cash-mgmt/shared';
-import { TransactionTypes';
 import { StatementEntry, StatementTransaction } from './StatementEntry';
 
 interface TransactionMatchingProps {

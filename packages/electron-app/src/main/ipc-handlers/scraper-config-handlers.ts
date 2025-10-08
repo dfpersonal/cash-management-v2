@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron';
 import { ScraperProcessManager } from '../services/ScraperProcessManager';
 import { ScraperConfig } from '@cash-mgmt/shared';
-import { ScraperTypes';
 
 export function registerScraperConfigHandlers(scraperManager: ScraperProcessManager) {
   

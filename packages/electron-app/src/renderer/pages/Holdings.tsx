@@ -24,9 +24,7 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { PortfolioHolding, AppState, Deposit } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 import { Transaction, TransactionForm, InterestConfiguration } from '@cash-mgmt/shared';
-import { TransactionTypes';
 import { TransactionList } from '../components/transactions/TransactionList';
 import { TransactionEntry } from '../components/transactions/TransactionEntry';
 import { InterestConfiguration as InterestConfigurationComponent } from '../components/transactions/InterestConfiguration';

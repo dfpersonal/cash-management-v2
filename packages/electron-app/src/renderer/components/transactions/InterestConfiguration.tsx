@@ -20,9 +20,7 @@ import {
   InterestPaymentType,
   InterestPaymentDestination,
 } from '@cash-mgmt/shared';
-import { TransactionTypes';
 import { Deposit } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 
 interface InterestConfigurationProps {
   account: Deposit & Partial<IInterestConfiguration>;

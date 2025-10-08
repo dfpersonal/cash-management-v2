@@ -12,7 +12,6 @@ import {
   InterestConfiguration,
   InterestEventConfig
 } from '@cash-mgmt/shared';
-import { TransactionTypes';
 
 /**
  * Register all transaction-related IPC handlers

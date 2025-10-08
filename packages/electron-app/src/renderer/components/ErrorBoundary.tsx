@@ -6,7 +6,6 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Paper, Typography, Button, Collapse, IconButton } from '@mui/material';
 import { Warning as WarningIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { LogCategory } from '@cash-mgmt/shared';
-import { LoggingTypes';
 
 interface Props {
   children: ReactNode;

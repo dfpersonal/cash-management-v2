@@ -18,7 +18,6 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { TransactionType } from '@cash-mgmt/shared';
-import { TransactionTypes';
 
 interface StatementEntryProps {
   open: boolean;

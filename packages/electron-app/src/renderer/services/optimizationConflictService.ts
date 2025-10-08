@@ -10,7 +10,6 @@ import {
   ClassifiedPendingMove,
   PendingMoveSource
 } from '@cash-mgmt/shared';
-import { PendingMoveTypes';
 
 export interface ConflictResolutionOptions {
   deleteOptimizationGenerated: boolean;

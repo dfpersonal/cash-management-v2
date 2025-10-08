@@ -18,7 +18,6 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { Transaction, TransactionType } from '@cash-mgmt/shared';
-import { TransactionTypes';
 
 interface TransactionRowProps {
   transaction: Transaction;

@@ -9,7 +9,6 @@ import {
   StorageCheckResponse,
   CleanupResponse
 } from '@cash-mgmt/shared';
-import { DocumentTypes';
 
 export class DocumentFileManager {
   private readonly documentsPath: string;

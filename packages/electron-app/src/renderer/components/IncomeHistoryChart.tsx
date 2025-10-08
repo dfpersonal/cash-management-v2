@@ -15,7 +15,6 @@ import {
 import { LineChart } from '@mui/x-charts/LineChart';
 import { TrendingUp, TrendingDown, Timeline } from '@mui/icons-material';
 import { IncomeHistoryPoint } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 
 interface IncomeHistoryChartProps {
   height?: number;

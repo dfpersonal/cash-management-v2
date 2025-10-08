@@ -2,7 +2,6 @@ import { Database } from 'sqlite3';
 import { DocumentService } from '@cash-mgmt/shared';
 import { DocumentFileManager } from './DocumentFileManager';
 import { CleanupResponse, TRASH_RETENTION_DAYS } from '@cash-mgmt/shared';
-import { DocumentTypes';
 
 export class DocumentCleanupService {
   private db: Database;

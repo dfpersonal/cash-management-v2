@@ -29,7 +29,6 @@ import {
 import { PieChart } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { PortfolioSummary, AllocationAnalysis, AppState } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 import { ActionSummaryCards } from '../components/dashboard/ActionSummaryCards';
 import { IncomeHistoryChart } from '../components/IncomeHistoryChart';
 

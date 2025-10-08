@@ -10,11 +10,11 @@
     "declarationDir": "./dist"
   },
   "include": [
-    "src/main/**/*",
-    "src/shared/**/*",
-    "src/tests/**/*"
+    "src/main/**/*"
   ],
   "exclude": [
-    "src/renderer/**/*"
+    "src/renderer/**/*",
+    "node_modules",
+    "dist"
   ]
 }

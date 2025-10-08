@@ -24,7 +24,6 @@ import {
   Update as UpdateIcon,
 } from '@mui/icons-material';
 import { Configuration as ConfigurationType, AppState } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 import { ScraperConfigSettings } from '../components/configuration/ScraperConfigSettings';
 
 interface ConfigurationProps {

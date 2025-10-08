@@ -36,7 +36,6 @@ import {
   PendingMoveClassifier,
   PendingMoveSource 
 } from '@cash-mgmt/shared';
-import { PendingMoveTypes';
 
 interface OptimizationConflictDialogProps {
   open: boolean;

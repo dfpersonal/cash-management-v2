@@ -13,7 +13,6 @@ import { OptimizationDashboard } from './pages/OptimizationDashboard';
 import { FRNManagement } from './pages/FRNManagement';
 import { OptimizationProvider } from './contexts/OptimizationContext';
 import { AppState } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 
 export const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>({

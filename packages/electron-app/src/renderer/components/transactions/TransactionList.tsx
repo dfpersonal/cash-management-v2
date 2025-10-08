@@ -27,7 +27,6 @@ import {
   Warning as VarianceIcon,
 } from '@mui/icons-material';
 import { Transaction, TransactionFilters, TransactionType } from '@cash-mgmt/shared';
-import { TransactionTypes';
 
 interface TransactionListProps {
   accountId: number;

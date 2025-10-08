@@ -34,7 +34,6 @@ import {
   MonetizationOn as MaturityIcon
 } from '@mui/icons-material';
 import { RateChange, NoticeEvent, Reminder } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 
 // Rate Change Dialog Component
 interface RateChangeDialogProps {

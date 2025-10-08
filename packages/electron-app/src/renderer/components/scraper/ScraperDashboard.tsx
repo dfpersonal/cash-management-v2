@@ -53,7 +53,6 @@ import {
   OutputData, 
   CompletionData 
 } from '@cash-mgmt/shared';
-import { ScraperTypes';
 
 // Enhanced results display for flexible file structure
 const formatFilesList = (files: { [key: string]: string }) => {

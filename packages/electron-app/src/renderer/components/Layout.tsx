@@ -31,7 +31,6 @@ import {
   Badge as FRNIcon,
 } from '@mui/icons-material';
 import { AppState } from '@cash-mgmt/shared';
-import { PortfolioTypes';
 import { NotificationCenter } from './notifications/NotificationCenter';
 
 const drawerWidth = 280;
