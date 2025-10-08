@@ -13,7 +13,6 @@ class FlagstoneScraper {
     this.headless = options.headless !== false; // Default to headless
     this.timeout = options.timeout || 30000;
     this.outputDir = options.outputDir || './data/flagstone';
-    this.dbPath = options.dbPath || '../data/database/cash_savings.db';
     this.saveToFiles = options.saveToFiles !== false; // Default to true
 
     // Configuration options
@@ -890,52 +889,6 @@ class FlagstoneScraper {
         scrapedAt: new Date().toISOString()
       };
     });
-  }
-
-  /**
-   * DEPRECATED: Legacy method - FRN lookup now handled by TypeScript service
-   * TODO: Remove this method in future cleanup once all scrapers are migrated
-   */
-  async processScrapedData(scrapedRates) {
-    this.logger.progress('Processing scraped data for database...');
-    
-    const processedProducts = [];
-    const db = new Database(this.dbPath);
-    
-    try {
-      await db.connect();
-      
-      for (const rate of scrapedRates) {
-        // Transform scraped data to database format
-        const transformedData = transformScrapedData(rate, this.platform);
-        
-        // FRN resolution will be handled by TypeScript service
-        transformedData.frn = null;
-        transformedData.confidence_score = 0.0;
-        transformedData.fuzzy_match_notes = null;
-        
-        // Validate data
-        const validation = validateProductData(transformedData);
-        if (!validation.valid) {
-          this.logger.warning(`Invalid data for ${transformedData.bank_name}: ${validation.errors.join(', ')}`);
-          continue;
-        }
-        
-        processedProducts.push(transformedData);
-      }
-      
-      // Report on processed products (FRN resolution will happen later via TypeScript service)
-      this.logger.info(`Processed ${processedProducts.length} valid products`);
-      
-      const uniqueBanks = [...new Set(processedProducts.map(p => p.bank_name))];
-      this.logger.info(`Unique banks: ${uniqueBanks.length} (FRN resolution will be performed by unified resolver)`);
-      this.logger.debug(`Banks: ${uniqueBanks.join(', ')}`);
-      
-      return processedProducts;
-      
-    } finally {
-      await db.close();
-    }
   }
 
   async scrape(options = {}) {
