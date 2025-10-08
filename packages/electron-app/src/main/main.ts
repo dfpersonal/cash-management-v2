@@ -97,12 +97,15 @@ class CashManagementApp {
     });
 
     // Load the app
-    if (process.env.NODE_ENV === 'development') {
-      this.mainWindow.loadFile(path.join(__dirname, '../index.html'));
-      this.mainWindow.webContents.openDevTools();
-    } else {
-      this.mainWindow.loadFile(path.join(__dirname, '../index.html'));
-    }
+    this.mainWindow.loadFile(path.join(__dirname, '../index.html'));
+
+    // Always open DevTools for now to debug white screen
+    this.mainWindow.webContents.openDevTools();
+
+    // Log renderer console messages to main process
+    this.mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+      console.log(`[Renderer Console] ${message}`);
+    });
 
     // Show window when ready to prevent visual flash
     this.mainWindow.once('ready-to-show', () => {
