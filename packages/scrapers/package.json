@@ -13,12 +13,10 @@
   "dependencies": {
     "@cash-mgmt/shared": "*",
     "playwright": "^1.40.0",
+    "puppeteer": "^24.23.0",
     "better-sqlite3": "^12.4.1",
     "sqlite3": "^5.1.6",
     "fast-levenshtein": "^3.0.0",
     "json-rules-engine": "^6.4.0"
-  },
-  "devDependencies": {
-    "puppeteer": "^21.0.0"
   }
 }
