@@ -2,7 +2,7 @@
   "name": "@cash-mgmt/scrapers",
   "version": "2.0.0",
   "description": "Web scrapers for financial institutions",
-  "type": "commonjs",
+  "type": "module",
   "main": "./src/runners/cli-runner.js",
   "scripts": {
     "test:ajbell": "node src/runners/cli-runner.js ajbell --test",
