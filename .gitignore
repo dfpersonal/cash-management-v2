@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Database files (DO NOT commit)
+*.db
+*.db-shm
+*.db-wal
+data/database/*.db
+data/test/**/*.db
+
+# Keep migrations and reference data
+!data/database/migrations/*.sql
+!data/reference/**/*
+!data/dashboards/current/*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Electron
+out/
+electron-builder-output/

@@ -1,0 +1,28 @@
+{
+  "name": "cash-management-v2",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Cash Management V2 - Turborepo monorepo architecture",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "electron": "turbo run dev --filter=@cash-mgmt/electron-app"
+  },
+  "devDependencies": {
+    "turbo": "^1.11.0",
+    "typescript": "^5.3.0",
+    "@types/node": "^20.10.0"
+  },
+  "packageManager": "npm@10.2.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

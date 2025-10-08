@@ -1,0 +1,903 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Portfolio Overview",
+      "tooltip": "Return to main portfolio overview",
+      "type": "link",
+      "url": "/d/portfolio-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Platform Data",
+      "tooltip": "View platform data details",
+      "type": "link",
+      "url": "/d/platform-data"
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT ROUND(COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) * 100.0 / COUNT(*), 1) as value FROM my_deposits WHERE is_active = 1",
+          "queryType": "table",
+          "rawQueryText": "SELECT ROUND(COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) * 100.0 / COUNT(*), 1) as value FROM my_deposits WHERE is_active = 1",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Portfolio FRN Coverage",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT ROUND(COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) * 100.0 / COUNT(*), 1) as value FROM available_products",
+          "queryType": "table",
+          "rawQueryText": "SELECT ROUND(COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) * 100.0 / COUNT(*), 1) as value FROM available_products",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Platform Products FRN Coverage",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT COUNT(*) as value FROM my_deposits WHERE is_active = 1 AND (frn IS NULL OR aer IS NULL OR balance IS NULL)",
+          "queryType": "table",
+          "rawQueryText": "SELECT COUNT(*) as value FROM my_deposits WHERE is_active = 1 AND (frn IS NULL OR aer IS NULL OR balance IS NULL)",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Portfolio Data Issues",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT COUNT(*) as value FROM available_products WHERE frn IS NULL OR aer_rate IS NULL OR bank_name IS NULL",
+          "queryType": "table",
+          "rawQueryText": "SELECT COUNT(*) as value FROM available_products WHERE frn IS NULL OR aer_rate IS NULL OR bank_name IS NULL",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Platform Data Issues",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "balance"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyGBP"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "aer"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "missing_fields"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green"
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT bank, type, sub_type, balance, aer, frn, CASE WHEN frn IS NULL THEN 'Missing FRN' WHEN aer IS NULL THEN 'Missing AER' WHEN balance IS NULL THEN 'Missing Balance' ELSE 'Complete' END as data_status, CASE WHEN frn IS NULL THEN 1 ELSE 0 END + CASE WHEN aer IS NULL THEN 1 ELSE 0 END + CASE WHEN balance IS NULL THEN 1 ELSE 0 END as missing_fields FROM my_deposits WHERE is_active = 1 AND (frn IS NULL OR aer IS NULL OR balance IS NULL) ORDER BY missing_fields DESC, balance DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT bank, type, sub_type, balance, aer, frn, CASE WHEN frn IS NULL THEN 'Missing FRN' WHEN aer IS NULL THEN 'Missing AER' WHEN balance IS NULL THEN 'Missing Balance' ELSE 'Complete' END as data_status, CASE WHEN frn IS NULL THEN 1 ELSE 0 END + CASE WHEN aer IS NULL THEN 1 ELSE 0 END + CASE WHEN balance IS NULL THEN 1 ELSE 0 END as missing_fields FROM my_deposits WHERE is_active = 1 AND (frn IS NULL OR aer IS NULL OR balance IS NULL) ORDER BY missing_fields DESC, balance DESC",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Portfolio Data Quality Issues",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "aer_rate"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "confidence_score"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red"
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0.8
+                    },
+                    {
+                      "color": "green",
+                      "value": 1.0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "data_status"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green"
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "aer_rate"
+          }
+        ]
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT platform, bank_name, account_type, aer_rate, frn, confidence_score, fuzzy_match_notes, CASE WHEN frn IS NULL THEN 'Missing FRN' WHEN aer_rate IS NULL THEN 'Missing Rate' WHEN bank_name IS NULL THEN 'Missing Bank' ELSE 'Complete' END as data_status FROM available_products WHERE frn IS NULL OR aer_rate IS NULL OR bank_name IS NULL ORDER BY aer_rate DESC NULLS LAST",
+          "queryType": "table",
+          "rawQueryText": "SELECT platform, bank_name, account_type, aer_rate, frn, confidence_score, fuzzy_match_notes, CASE WHEN frn IS NULL THEN 'Missing FRN' WHEN aer_rate IS NULL THEN 'Missing Rate' WHEN bank_name IS NULL THEN 'Missing Bank' ELSE 'Complete' END as data_status FROM available_products WHERE frn IS NULL OR aer_rate IS NULL OR bank_name IS NULL ORDER BY aer_rate DESC NULLS LAST",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Platform Data Quality Issues",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "id": 7,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "visible",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT platform as metric, COUNT(CASE WHEN frn IS NULL THEN 1 END) as value FROM available_products GROUP BY platform ORDER BY value DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT platform as metric, COUNT(CASE WHEN frn IS NULL THEN 1 END) as value FROM available_products GROUP BY platform ORDER BY value DESC",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Missing FRNs by Platform",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "id": 8,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "visible",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT CASE WHEN confidence_score IS NULL THEN 'No Score' WHEN confidence_score >= 1.0 THEN 'Perfect (1.0)' WHEN confidence_score >= 0.9 THEN 'High (0.9+)' WHEN confidence_score >= 0.8 THEN 'Medium (0.8+)' ELSE 'Low (<0.8)' END as metric, COUNT(*) as value FROM available_products WHERE frn IS NOT NULL GROUP BY CASE WHEN confidence_score IS NULL THEN 'No Score' WHEN confidence_score >= 1.0 THEN 'Perfect (1.0)' WHEN confidence_score >= 0.9 THEN 'High (0.9+)' WHEN confidence_score >= 0.8 THEN 'Medium (0.8+)' ELSE 'Low (<0.8)' END ORDER BY COUNT(*) DESC",
+          "queryType": "table",
+          "rawQueryText": "SELECT CASE WHEN confidence_score IS NULL THEN 'No Score' WHEN confidence_score >= 1.0 THEN 'Perfect (1.0)' WHEN confidence_score >= 0.9 THEN 'High (0.9+)' WHEN confidence_score >= 0.8 THEN 'Medium (0.8+)' ELSE 'Low (<0.8)' END as metric, COUNT(*) as value FROM available_products WHERE frn IS NOT NULL GROUP BY CASE WHEN confidence_score IS NULL THEN 'No Score' WHEN confidence_score >= 1.0 THEN 'Perfect (1.0)' WHEN confidence_score >= 0.9 THEN 'High (0.9+)' WHEN confidence_score >= 0.8 THEN 'Medium (0.8+)' ELSE 'Low (<0.8)' END ORDER BY COUNT(*) DESC",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "FRN Match Confidence Distribution",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "ceracc5uxhibke"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_updated"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green"
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 7
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "ceracc5uxhibke"
+          },
+          "queryText": "SELECT 'my_deposits' as table_name, COUNT(*) as total_records, COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) as records_with_frn, COUNT(CASE WHEN aer IS NOT NULL THEN 1 END) as records_with_rate, MIN(last_updated) as oldest_update, MAX(last_updated) as newest_update, JULIANDAY('now') - JULIANDAY(MAX(last_updated)) as days_since_update UNION ALL SELECT 'available_products' as table_name, COUNT(*) as total_records, COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) as records_with_frn, COUNT(CASE WHEN aer_rate IS NOT NULL THEN 1 END) as records_with_rate, MIN(last_updated) as oldest_update, MAX(last_updated) as newest_update, JULIANDAY('now') - JULIANDAY(MAX(last_updated)) as days_since_update FROM available_products",
+          "queryType": "table",
+          "rawQueryText": "SELECT 'my_deposits' as table_name, COUNT(*) as total_records, COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) as records_with_frn, COUNT(CASE WHEN aer IS NOT NULL THEN 1 END) as records_with_rate, MIN(last_updated) as oldest_update, MAX(last_updated) as newest_update, JULIANDAY('now') - JULIANDAY(MAX(last_updated)) as days_since_update UNION ALL SELECT 'available_products' as table_name, COUNT(*) as total_records, COUNT(CASE WHEN frn IS NOT NULL THEN 1 END) as records_with_frn, COUNT(CASE WHEN aer_rate IS NOT NULL THEN 1 END) as records_with_rate, MIN(last_updated) as oldest_update, MAX(last_updated) as newest_update, JULIANDAY('now') - JULIANDAY(MAX(last_updated)) as days_since_update FROM available_products",
+          "refId": "A",
+          "timeColumns": [
+            "time",
+            "ts"
+          ]
+        }
+      ],
+      "title": "Data Freshness Summary",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "data-quality",
+    "monitoring"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Data Quality Dashboard",
+  "uid": "data-quality",
+  "version": 1,
+  "weekStart": ""
+}
