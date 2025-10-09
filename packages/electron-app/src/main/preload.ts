@@ -136,8 +136,52 @@ const electronAPI = {
   resetScraperConfigs: () =>
     ipcRenderer.invoke('scraper:reset-configs'),
 
+  // Pipeline/Orchestrator methods
+  executePipeline: (inputFiles: string[]) =>
+    ipcRenderer.invoke('orchestrator:execute-pipeline', inputFiles),
+  getPipelineStatus: () =>
+    ipcRenderer.invoke('orchestrator:get-status'),
+  getOrchestratorHealth: () =>
+    ipcRenderer.invoke('orchestrator:get-health'),
+  updatePipelineConfig: (configUpdates: Record<string, string | number | boolean>) =>
+    ipcRenderer.invoke('orchestrator:update-config', configUpdates),
+  validatePipelineConfig: () =>
+    ipcRenderer.invoke('orchestrator:validate-config'),
+
+  // Pipeline event listeners
+  onPipelineStarted: (callback: (data: any) => void) => {
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('orchestrator:pipeline-started', handler);
+    return () => ipcRenderer.removeListener('orchestrator:pipeline-started', handler);
+  },
+  onPipelineStageStarted: (callback: (data: any) => void) => {
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('orchestrator:stage-started', handler);
+    return () => ipcRenderer.removeListener('orchestrator:stage-started', handler);
+  },
+  onPipelineStageCompleted: (callback: (data: any) => void) => {
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('orchestrator:stage-completed', handler);
+    return () => ipcRenderer.removeListener('orchestrator:stage-completed', handler);
+  },
+  onPipelineCompleted: (callback: (data: any) => void) => {
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('orchestrator:pipeline-completed', handler);
+    return () => ipcRenderer.removeListener('orchestrator:pipeline-completed', handler);
+  },
+  onPipelineFailed: (callback: (data: any) => void) => {
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('orchestrator:pipeline-failed', handler);
+    return () => ipcRenderer.removeListener('orchestrator:pipeline-failed', handler);
+  },
+  onPipelineProgress: (callback: (data: any) => void) => {
+    const handler = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('orchestrator:progress', handler);
+    return () => ipcRenderer.removeListener('orchestrator:progress', handler);
+  },
+
   // File system methods
-  openPath: (filePath: string) => 
+  openPath: (filePath: string) =>
     ipcRenderer.invoke('open-path', filePath),
 
   // Scraper event listeners

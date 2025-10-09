@@ -85,6 +85,9 @@ interface ScraperDashboardState {
   showAdvancedOptions: boolean;
   realtimeOutput: Map<string, string[]>;
   expandedLogs: Set<string>;
+  pipelineRunning: boolean;
+  pipelineProgress: string | null;
+  pipelineError: string | null;
 }
 
 export const ScraperDashboard: React.FC = () => {
@@ -98,6 +101,9 @@ export const ScraperDashboard: React.FC = () => {
     showAdvancedOptions: false,
     realtimeOutput: new Map(),
     expandedLogs: new Set(),
+    pipelineRunning: false,
+    pipelineProgress: null,
+    pipelineError: null,
   });
 
   const [scraperOptions, setScraperOptions] = useState<ScrapingOptions>({
@@ -110,6 +116,7 @@ export const ScraperDashboard: React.FC = () => {
     loadPlatforms();
     loadProcesses();
     setupEventListeners();
+    setupPipelineListeners();
 
     return () => {
       // Cleanup event listeners
@@ -195,10 +202,101 @@ export const ScraperDashboard: React.FC = () => {
   // Handle completion updates
   const handleCompletionUpdate = (data: CompletionData) => {
     loadProcesses(); // Refresh process list
-    setState(prev => ({ 
-      ...prev, 
-      error: data.success ? null : `Scraping failed: ${data.results?.errorMessage || 'Unknown error'}` 
+    setState(prev => ({
+      ...prev,
+      error: data.success ? null : `Scraping failed: ${data.results?.errorMessage || 'Unknown error'}`
     }));
+  };
+
+  // Set up pipeline event listeners
+  const setupPipelineListeners = () => {
+    window.electronAPI.onPipelineStarted(() => {
+      setState(prev => ({ ...prev, pipelineRunning: true, pipelineProgress: 'Pipeline started...', pipelineError: null }));
+    });
+
+    window.electronAPI.onPipelineProgress((data: any) => {
+      setState(prev => ({ ...prev, pipelineProgress: data.message || 'Processing...' }));
+    });
+
+    window.electronAPI.onPipelineStageStarted((data: any) => {
+      setState(prev => ({ ...prev, pipelineProgress: `Stage started: ${data.stage || 'Unknown'}` }));
+    });
+
+    window.electronAPI.onPipelineStageCompleted((data: any) => {
+      setState(prev => ({ ...prev, pipelineProgress: `Stage completed: ${data.stage || 'Unknown'}` }));
+    });
+
+    window.electronAPI.onPipelineCompleted(() => {
+      setState(prev => ({
+        ...prev,
+        pipelineRunning: false,
+        pipelineProgress: 'Pipeline completed successfully!',
+        pipelineError: null
+      }));
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setState(prev => ({ ...prev, pipelineProgress: null }));
+      }, 5000);
+    });
+
+    window.electronAPI.onPipelineFailed((data: any) => {
+      setState(prev => ({
+        ...prev,
+        pipelineRunning: false,
+        pipelineProgress: null,
+        pipelineError: data.error || 'Pipeline failed'
+      }));
+    });
+  };
+
+  // Run pipeline with all available JSON files
+  const handleRunPipeline = async () => {
+    setState(prev => ({ ...prev, pipelineRunning: true, pipelineProgress: 'Starting pipeline...', pipelineError: null }));
+
+    try {
+      // Get all JSON files from completed scraper processes
+      const jsonFiles: string[] = [];
+
+      for (const process of state.processes) {
+        if (process.status === 'completed' && process.results?.files) {
+          // Add all JSON files from the process
+          Object.values(process.results.files).forEach(filePath => {
+            if (filePath.endsWith('.json')) {
+              jsonFiles.push(filePath);
+            }
+          });
+        }
+      }
+
+      if (jsonFiles.length === 0) {
+        setState(prev => ({
+          ...prev,
+          pipelineRunning: false,
+          pipelineProgress: null,
+          pipelineError: 'No JSON files found. Run scrapers first!'
+        }));
+        return;
+      }
+
+      const result = await window.electronAPI.executePipeline(jsonFiles);
+
+      if (!result.success) {
+        setState(prev => ({
+          ...prev,
+          pipelineRunning: false,
+          pipelineProgress: null,
+          pipelineError: result.error || 'Failed to start pipeline'
+        }));
+      }
+    } catch (error) {
+      console.error('Error starting pipeline:', error);
+      setState(prev => ({
+        ...prev,
+        pipelineRunning: false,
+        pipelineProgress: null,
+        pipelineError: 'Failed to start pipeline'
+      }));
+    }
   };
 
   // Start scraping for a platform
@@ -395,6 +493,52 @@ export const ScraperDashboard: React.FC = () => {
             >
               Cleanup Old Processes
             </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Pipeline Processing */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Pipeline Processing
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Process scraped JSON files through the data pipeline (JSON Ingestion → FRN Matching → Database)
+          </Typography>
+
+          {state.pipelineError && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setState(prev => ({ ...prev, pipelineError: null }))}>
+              {state.pipelineError}
+            </Alert>
+          )}
+
+          {state.pipelineProgress && !state.pipelineError && (
+            <Alert severity={state.pipelineRunning ? 'info' : 'success'} sx={{ mb: 2 }}>
+              {state.pipelineProgress}
+            </Alert>
+          )}
+
+          {state.pipelineRunning && (
+            <Box sx={{ mb: 2 }}>
+              <LinearProgress />
+            </Box>
+          )}
+
+          <Box display="flex" gap={2} alignItems="center">
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<DataIcon />}
+              onClick={handleRunPipeline}
+              disabled={state.pipelineRunning}
+              size="large"
+            >
+              {state.pipelineRunning ? 'Processing...' : 'Run Pipeline'}
+            </Button>
+            <Typography variant="body2" color="text.secondary">
+              {state.processes.filter(p => p.status === 'completed').length} completed scraper run(s) available
+            </Typography>
           </Box>
         </CardContent>
       </Card>
