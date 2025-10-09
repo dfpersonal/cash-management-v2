@@ -60,9 +60,23 @@ export abstract class SubprocessService extends EventEmitter {
     return new Promise((resolve, reject) => {
       const fullArgs = this.buildFullArgs(command, args, options);
       
-      this.child = spawn('npx', ['ts-node', this.cliPath, ...fullArgs], {
+      // Ensure PATH includes common Node.js binary locations
+      const currentPath = process.env.PATH || '';
+      const additionalPaths = ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin'];
+      const extendedPath = [currentPath, ...additionalPaths].filter(Boolean).join(':');
+
+      console.log('🔍 Subprocess spawn debug:');
+      console.log('  Working directory:', this.getWorkingDirectory());
+      console.log('  CLI path:', this.cliPath);
+
+      // Use node to run compiled JavaScript (production-ready approach)
+      this.child = spawn('node', [this.cliPath, ...fullArgs], {
         cwd: this.getWorkingDirectory(),
-        env: { ...process.env, NODE_ENV: 'production' }
+        env: {
+          ...process.env,
+          NODE_ENV: 'production',
+          PATH: extendedPath
+        }
       });
       
       let output = '';
@@ -96,22 +110,31 @@ export abstract class SubprocessService extends EventEmitter {
       });
       
       this.child.on('close', (code) => {
+        console.log(`\n📊 ${this.moduleName} subprocess closed with code:`, code);
+        console.log('📝 Output length:', output.length);
+        console.log('❌ Error output:', errorOutput || '(none)');
+
         if (code === 0 || code === 1) { // Success or Warning
           try {
             const result = JSON.parse(output);
-            
+
             // Validate result structure
             if (!result.module || !result.status) {
               reject(new Error(`Invalid ${this.moduleName} output structure`));
               return;
             }
-            
+
             resolve(result);
           } catch (e: any) {
-            reject(new Error(`Failed to parse ${this.moduleName} output: ${e.message}\nOutput: ${output}`));
+            console.error('Failed to parse output:', e.message);
+            console.error('Output received:', output.substring(0, 500));
+            reject(new Error(`Failed to parse ${this.moduleName} output: ${e.message}\nOutput: ${output.substring(0, 200)}`));
           }
         } else {
-          reject(new Error(`${this.moduleName} failed with code ${code}: ${errorOutput}`));
+          console.error(`${this.moduleName} exited with code ${code}`);
+          console.error('Error output:', errorOutput);
+          console.error('Stdout output (first 500 chars):', output.substring(0, 500));
+          reject(new Error(`${this.moduleName} failed with code ${code}: ${errorOutput || 'No error output captured'}`));
         }
       });
       

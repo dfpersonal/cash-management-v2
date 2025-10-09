@@ -361,7 +361,8 @@ class CashManagementApp {
       try {
         // Use sqlite3 directly to query unified_config table
         const sqlite3 = require('sqlite3').verbose();
-        const dbPath = process.env.DATABASE_PATH || require('path').join(process.cwd(), 'data', 'database', 'cash_savings.db');
+        const defaultPath = path.join(__dirname, '../../../../data/database/cash_savings.db');
+        const dbPath = process.env.DATABASE_PATH || defaultPath;
         const db = new sqlite3.Database(dbPath);
         
         return new Promise((resolve, reject) => {

@@ -69,7 +69,10 @@ export class ConfigurationLoader {
   private db: DatabaseConnection;
 
   constructor(db?: DatabaseConnection) {
-    this.db = db || new SQLiteConnection();
+    if (!db) {
+      throw new ConfigurationError('Database connection is required for ConfigurationLoader', 'database_connection');
+    }
+    this.db = db;
   }
 
   public async loadComplianceConfig(): Promise<ComplianceConfig> {
@@ -555,5 +558,12 @@ export class ConfigurationLoader {
 
   public async close(): Promise<void> {
     await this.db.close();
+  }
+
+  /**
+   * Get the database connection for advanced usage
+   */
+  public getDatabaseConnection(): DatabaseConnection {
+    return this.db;
   }
 }

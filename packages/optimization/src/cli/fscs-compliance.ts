@@ -115,7 +115,7 @@ program
   .name('fscs-compliance')
   .description('FSCS compliance analysis and diversification recommendations')
   .version('2.0.0')
-  .option('-d, --database <path>', 'path to SQLite database', process.env.DATABASE_PATH || '/Users/david/Websites/cash-management/data/database/cash_savings.db')
+  .option('-d, --database <path>', 'path to SQLite database', process.env.DATABASE_PATH)
   .option('--include-pending', 'include pending deposits in analysis', false)
   .option('--max-rate-loss <percent>', 'maximum acceptable rate loss for diversification', '0.5')
   .option('--diversify', 'generate diversification recommendations for breaches', false)

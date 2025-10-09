@@ -18,7 +18,7 @@ export class ProductLoader {
    */
   public async getAvailableProducts(): Promise<AvailableProduct[]> {
     const query = `
-      SELECT 
+      SELECT
         id,
         platform,
         bank_name,
@@ -30,7 +30,7 @@ export class ProductLoader {
         max_deposit,
         fscs_protected,
         scrape_date
-      FROM available_products_filtered_aer
+      FROM available_products
       WHERE (notice_period_days IS NULL OR notice_period_days = 0)
         AND (term_months IS NULL OR term_months = 0)
       ORDER BY aer_rate DESC
@@ -202,8 +202,8 @@ export class ProductLoader {
    */
   public async getProductCount(): Promise<number> {
     const result = await this.db.query<{count: number}>(`
-      SELECT COUNT(*) as count 
-      FROM available_products_filtered_aer
+      SELECT COUNT(*) as count
+      FROM available_products
     `);
     return result[0]?.count || 0;
   }

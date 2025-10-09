@@ -10,20 +10,15 @@ import { getLogger } from '../utils/logger';
 export class SQLiteConnection implements DatabaseConnection {
   private db: sqlite3.Database | null = null;
   public readonly databasePath: string;
-  public readonly isProduction: boolean;
   private logger = getLogger({ component: 'database' });
 
   constructor(databasePath?: string) {
-    // Environment-based database path selection
-    if (databasePath) {
-      this.databasePath = databasePath;
-    } else {
-      const isDev = process.env.NODE_ENV === 'development';
-      const dbName = isDev ? 'cash_savings_dev.db' : 'cash_savings.db';
-      this.databasePath = path.resolve(__dirname, '../../../data/database', dbName);
+    // Require explicit database path - no fallbacks
+    if (!databasePath) {
+      throw new DatabaseError('Database path is required. Provide path to SQLiteConnection constructor.', undefined);
     }
-    
-    this.isProduction = !this.databasePath.includes('dev.db');
+
+    this.databasePath = databasePath;
   }
 
   public async connect(): Promise<void> {
@@ -36,7 +31,7 @@ export class SQLiteConnection implements DatabaseConnection {
         if (err) {
           reject(new DatabaseError(`Failed to connect to database: ${err.message}`, undefined));
         } else {
-          this.logger.debug(`Connected to ${this.isProduction ? 'production' : 'development'} database: ${this.databasePath}`);
+          this.logger.debug(`Connected to database: ${this.databasePath}`);
           resolve();
         }
       });

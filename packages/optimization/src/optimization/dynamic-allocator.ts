@@ -140,9 +140,10 @@ export class DynamicAllocator {
     let bestOpp: DynamicOpportunity | null = null;
     let bestMarginalBenefit = 0;
     let skippedReasons = new Map<string, string>();
-    
-    // Load configuration values once
-    const unifiedConfig = new UnifiedConfigurationLoader();
+
+    // Load configuration values once using the database connection from config
+    const db = this.config.getDatabaseConnection();
+    const unifiedConfig = new UnifiedConfigurationLoader(db);
     const optimizationConfig = await unifiedConfig.getOptimizationConfig();
     const allowNoFRN = await unifiedConfig.getBoolean('allow_no_frn_products', false);
     

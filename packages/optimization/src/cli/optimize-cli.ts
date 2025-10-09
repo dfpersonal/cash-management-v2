@@ -243,8 +243,11 @@ Example:
   let exitCode = 0;
 
   try {
-    // Database connection
-    const dbPath = options.database || process.env.DATABASE_PATH || '/Users/david/Websites/cash-management/data/database/cash_savings.db';
+    // Database connection - require explicit path
+    if (!options.database && !process.env.DATABASE_PATH) {
+      throw new Error('Database path is required. Use --database flag or set DATABASE_PATH environment variable.');
+    }
+    const dbPath = options.database || process.env.DATABASE_PATH!;
     const db = new SQLiteConnection(dbPath);
     
     reportProgress(10, 'Connecting to database', options);

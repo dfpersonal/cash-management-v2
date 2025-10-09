@@ -14,7 +14,7 @@ export interface FSCSOptions extends SubprocessOptions {
 }
 
 export class FSCSComplianceService extends SubprocessService {
-  protected readonly cliPath = 'src/cli/fscs-compliance.ts';
+  protected readonly cliPath = 'dist/cli/fscs-compliance.js';
   protected readonly moduleName = 'FSCS Compliance';
   
   /**
@@ -60,6 +60,10 @@ export class FSCSComplianceService extends SubprocessService {
   }
   
   protected getWorkingDirectory(): string {
-    return require('path').join(process.cwd(), 'recommendation-engine');
+    // optimization package is at packages/optimization
+    const path = require('path');
+    // Go up from packages/electron-app to packages/
+    const packagesDir = path.join(process.cwd(), '..');
+    return path.join(packagesDir, 'optimization');
   }
 }

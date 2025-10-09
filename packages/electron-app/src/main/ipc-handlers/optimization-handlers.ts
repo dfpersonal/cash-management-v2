@@ -15,13 +15,18 @@ let optimizerService: RateOptimizerService | null = null;
 
 // Database path (should come from app config)
 const getDatabasePath = () => {
-  const dbPath = process.env.DATABASE_PATH || require('path').join(process.cwd(), 'data', 'database', 'cash_savings.db');
+  // __dirname is at dist/main/ipc-handlers, need to go up 5 levels to monorepo root
+  const path = require('path');
+  const fs = require('fs');
 
-  // Validate database before returning path
-  const validation = DatabaseValidator.validateDatabase(dbPath);
-  if (!validation.isValid) {
-    throw new Error(`Database validation failed: ${validation.error}`);
-  }
+  const defaultPath = path.join(__dirname, '../../../../../data/database/cash_savings.db');
+  const dbPath = process.env.DATABASE_PATH || defaultPath;
+
+  console.log('🔍 getDatabasePath() called');
+  console.log('  __dirname:', __dirname);
+  console.log('  defaultPath:', defaultPath);
+  console.log('  dbPath:', dbPath);
+  console.log('  File exists?:', fs.existsSync(dbPath));
 
   return dbPath;
 };
@@ -31,18 +36,25 @@ export function registerOptimizationHandlers() {
   // ============= FSCS Compliance Handlers =============
   
   ipcMain.handle('fscs:check', async (event: IpcMainInvokeEvent, options: FSCSOptions) => {
+    console.log('🎯 fscs:check IPC handler called');
     try {
+      const dbPath = getDatabasePath();
+      console.log('📁 Database path resolved to:', dbPath);
+
+      const fs = require('fs');
+      console.log('📂 Database file exists?:', fs.existsSync(dbPath));
+
       if (!fscsService) {
         fscsService = new FSCSComplianceService();
       }
-      
+
       // Listen for progress updates
       fscsService.on('progress', (progress) => {
         event.sender.send('fscs:progress', progress);
       });
-      
+
       const result = await fscsService.checkCompliance({
-        database: getDatabasePath(),
+        database: dbPath,
         format: 'json',
         includeCalendarEvents: true,
         includeActionItems: true,
@@ -50,10 +62,10 @@ export function registerOptimizationHandlers() {
         progress: true,
         ...options
       });
-      
+
       return { success: true, data: result };
     } catch (error) {
-      console.error('FSCS check failed:', error);
+      console.error('❌ FSCS check failed:', error);
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   });

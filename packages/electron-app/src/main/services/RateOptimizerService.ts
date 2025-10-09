@@ -14,7 +14,7 @@ export interface OptimizationOptions extends SubprocessOptions {
 }
 
 export class RateOptimizerService extends SubprocessService {
-  protected readonly cliPath = 'src/cli/optimize-cli.ts';
+  protected readonly cliPath = 'dist/cli/optimize-cli.js';
   protected readonly moduleName = 'Rate Optimizer';
   
   /**
@@ -67,6 +67,10 @@ export class RateOptimizerService extends SubprocessService {
   }
   
   protected getWorkingDirectory(): string {
-    return require('path').join(process.cwd(), 'recommendation-engine');
+    // optimization package is at packages/optimization
+    const path = require('path');
+    // Go up from packages/electron-app to packages/
+    const packagesDir = path.join(process.cwd(), '..');
+    return path.join(packagesDir, 'optimization');
   }
 }

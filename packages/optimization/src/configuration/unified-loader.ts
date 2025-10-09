@@ -37,7 +37,10 @@ export class UnifiedConfigurationLoader {
   private configMap: Map<string, any> = new Map();
 
   constructor(db?: DatabaseConnection) {
-    this.db = db || new SQLiteConnection();
+    if (!db) {
+      throw new ConfigurationError('Database connection is required for UnifiedConfigurationLoader', 'database_connection');
+    }
+    this.db = db;
   }
 
   /**
