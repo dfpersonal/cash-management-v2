@@ -25,7 +25,8 @@ export class EnhancedLogger {
     this.componentName = options.componentName || 'scraper';
     this.platformName = options.platformName || null; // For platform-specific prefixes
     this.verboseMode = options.verboseMode || false; // Control detailed output
-    
+    this.timestamp = options.timestamp || null; // Shared timestamp for consistent file naming
+
     if (this.enableFileLogging) {
       this.initializeLogFile();
     }
@@ -38,15 +39,15 @@ export class EnhancedLogger {
         fs.mkdirSync(this.logDir, { recursive: true });
       }
 
-      // Create timestamped log file
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      // Use provided timestamp for consistent file naming, or generate new one
+      const timestamp = this.timestamp || new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `${this.componentName}-${timestamp}.log`;
       this.logFile = path.join(this.logDir, filename);
 
       // Initialize log file with header
       const header = `=== ${this.componentName.toUpperCase()} LOG STARTED AT ${new Date().toISOString()} ===\n`;
       fs.writeFileSync(this.logFile, header);
-      
+
     } catch (error) {
       console.error('Failed to initialize log file:', error);
       this.enableFileLogging = false;

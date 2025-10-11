@@ -16,7 +16,10 @@ export class ScraperBase {
     this.platform = platform;
     this.options = options;
     this.outputDir = options.outputDir || `./data`;
-    
+
+    // Generate single timestamp for entire scraper run (used by all files: log, raw, normalized)
+    this.runTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
     // Initialize shared utilities
     this.browserManager = new BrowserManager({
       headless: options.headless,
@@ -31,9 +34,10 @@ export class ScraperBase {
       logLevel: options.logLevel || 'info',
       enableFileLogging: options.enableFileLogging !== false,
       logDir: options.logDir || this.outputDir,
-      componentName: platform,
+      componentName: platform.toLowerCase(), // Force lowercase for consistent file naming
       platformName: this.getPlatformDisplayName(),
-      verboseMode: options.verbose || false
+      verboseMode: options.verbose || false,
+      timestamp: this.runTimestamp // Pass shared timestamp for log file
     });
     // Deduplication now handled by TypeScript service
     // Legacy config manager and deduplicator removed
@@ -265,9 +269,9 @@ export class ScraperBase {
    */
   async saveRawJSON(rawData) {
     if (!this.saveToFiles) return null;
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${this.platform}-raw-${timestamp}.json`;
+
+    // Use shared timestamp and lowercase platform name for consistent file naming
+    const filename = `${this.platform.toLowerCase()}-raw-${this.runTimestamp}.json`;
     const filepath = path.join(this.outputDir, filename);
     
     try {
@@ -302,9 +306,9 @@ export class ScraperBase {
    */
   async saveNormalizedJSON(normalizedData) {
     if (!this.saveToFiles) return null;
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${this.platform}-normalized-${timestamp}.json`;
+
+    // Use shared timestamp and lowercase platform name for consistent file naming
+    const filename = `${this.platform.toLowerCase()}-normalized-${this.runTimestamp}.json`;
     const filepath = path.join(this.outputDir, filename);
     
     try {

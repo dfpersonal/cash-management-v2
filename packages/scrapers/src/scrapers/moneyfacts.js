@@ -361,10 +361,11 @@ class MoneyFactsScraper extends ScraperBase {
     try {
       this.logger.debug(`Generating pipeline files for ${accountType}...`);
 
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      // Use shared timestamp for consistent file naming
+      const timestamp = this.runTimestamp;
 
-      // Create raw JSON file for this account type with metadata wrapper
-      const rawFilename = `MoneyFacts-${accountType}-raw-${timestamp}.json`;
+      // Create raw JSON file for this account type with metadata wrapper (lowercase platform name)
+      const rawFilename = `moneyfacts-${accountType}-raw-${timestamp}.json`;
       const rawFilepath = path.join(this.outputDir, rawFilename);
 
       // Wrap raw data in metadata format
@@ -380,7 +381,8 @@ class MoneyFactsScraper extends ScraperBase {
       const normalizer = new DataNormalizer();
       const normalizedData = await normalizer.normalize(rawData, 'moneyfacts');
 
-      const normalizedFilename = `MoneyFacts-${accountType}-normalized-${timestamp}.json`;
+      // Use lowercase platform name for consistent file naming
+      const normalizedFilename = `moneyfacts-${accountType}-normalized-${timestamp}.json`;
       const normalizedFilepath = path.join(this.outputDir, normalizedFilename);
 
       // Wrap normalized data in metadata format

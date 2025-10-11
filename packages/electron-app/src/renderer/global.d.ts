@@ -112,6 +112,7 @@ declare global {
       updateScraperConfig: (scraperId: string, updates: any) => Promise<any>;
       updateScraperConfigsBulk: (updates: any[]) => Promise<any>;
       resetScraperConfigs: () => Promise<any>;
+      getAvailableJsonFiles: () => Promise<{ success: boolean; data: string[]; error?: string }>;
 
       // Pipeline/Orchestrator methods
       executePipeline: (inputFiles: string[]) => Promise<any>;

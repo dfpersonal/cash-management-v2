@@ -343,7 +343,8 @@ export class JSONIngestionService {
       const config: Partial<JSONIngestionConfig> = {
         // Directory structure (platform-specific - not from config)
         // Allow environment variable override for test fixtures directory
-        dataDirectory: process.env.JSON_DATA_DIR || require('path').join(process.cwd(), 'scrapers', 'data'),
+        // Use absolute path from monorepo root, resolved from pipeline package location
+        dataDirectory: process.env.JSON_DATA_DIR || require('path').resolve(__dirname, '../../../scrapers/data'),
         platformDirectories: ['ajbell', 'flagstone', 'hargreaves-lansdown', 'moneyfacts']
       };
 

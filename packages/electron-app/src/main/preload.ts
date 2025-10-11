@@ -135,6 +135,8 @@ const electronAPI = {
     ipcRenderer.invoke('scraper:update-configs-bulk', updates),
   resetScraperConfigs: () =>
     ipcRenderer.invoke('scraper:reset-configs'),
+  getAvailableJsonFiles: () =>
+    ipcRenderer.invoke('scraper:get-available-json-files'),
 
   // Pipeline/Orchestrator methods
   executePipeline: (inputFiles: string[]) =>

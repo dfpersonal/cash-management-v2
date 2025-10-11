@@ -15,17 +15,21 @@ class FlagstoneScraper {
     this.outputDir = options.outputDir || './data/flagstone';
     this.saveToFiles = options.saveToFiles !== false; // Default to true
 
+    // Generate single timestamp for entire scraper run (used by all files: log, raw, normalized)
+    this.runTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
     // Configuration options
     // Legacy deduplication config removed - handled by TypeScript service
 
     // Initialize enhanced logger
     this.logger = new EnhancedLogger({
-      componentName: 'flagstone',
+      componentName: 'flagstone', // Already lowercase
       platformName: 'Flagstone',
       logLevel: options.logLevel || 'info',
       enableFileLogging: options.enableFileLogging !== false,
       logDir: options.logDir || options.outputDir || './data/flagstone',
-      verboseMode: options.verbose || false
+      verboseMode: options.verbose || false,
+      timestamp: this.runTimestamp // Pass shared timestamp for log file
     });
   }
 
@@ -954,8 +958,8 @@ class FlagstoneScraper {
   async generatePipelineFiles(rawData) {
     try {
       // Create raw JSON file with metadata format
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const rawFilename = `Flagstone-raw-${timestamp}.json`;
+      // Use shared timestamp and lowercase platform name for consistent file naming
+      const rawFilename = `flagstone-raw-${this.runTimestamp}.json`;
       const rawFilepath = path.join(this.outputDir, rawFilename);
 
       // Ensure output directory exists
@@ -976,7 +980,8 @@ class FlagstoneScraper {
       const normalizer = new DataNormalizer();
       const normalizedData = await normalizer.normalize(rawData, 'Flagstone');
 
-      const normalizedFilename = `Flagstone-normalized-${timestamp}.json`;
+      // Use shared timestamp and lowercase platform name for consistent file naming
+      const normalizedFilename = `flagstone-normalized-${this.runTimestamp}.json`;
       const normalizedFilepath = path.join(this.outputDir, normalizedFilename);
 
       // Wrap normalized data in metadata format

@@ -686,6 +686,9 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
         duration: result.totalDuration,
         finalProductCount: result.finalProductCount
       });
+
+      // Clean up processed files after successful pipeline
+      await this.cleanupProcessedFiles(inputFiles);
     } else {
       this.emit('pipeline:failed', {
         batchId,
@@ -1382,6 +1385,67 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
     } catch (error) {
       console.error('❌ Rebuild from raw data failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Clean up processed files after successful pipeline completion
+   * Uses graceful failure - warnings only if files are missing or can't be deleted
+   */
+  private async cleanupProcessedFiles(inputFiles: string[]): Promise<void> {
+    console.log('🧹 Cleaning up processed files...');
+
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+
+      for (const filePath of inputFiles) {
+        try {
+          // Extract timestamp and platform from normalized filename
+          // Format: platform-normalized-timestamp.json
+          const filename = path.basename(filePath);
+          const match = filename.match(/^([a-z]+)-normalized-(.+)\.json$/);
+
+          if (!match) {
+            console.warn(`⚠️  Skipping cleanup for non-standard filename: ${filename}`);
+            continue;
+          }
+
+          const [, platform, timestamp] = match;
+          const directory = path.dirname(filePath);
+
+          // Find and delete all files with the same timestamp (log, raw, normalized)
+          const allFiles = await fs.readdir(directory);
+          const relatedFiles = allFiles.filter(file =>
+            file.includes(timestamp) && file.startsWith(platform)
+          );
+
+          for (const file of relatedFiles) {
+            const fullPath = path.join(directory, file);
+            try {
+              await fs.unlink(fullPath);
+              console.log(`  ✓ Deleted: ${file}`);
+            } catch (unlinkError: any) {
+              if (unlinkError.code === 'ENOENT') {
+                console.warn(`  ⚠️  File already deleted: ${file}`);
+              } else {
+                console.warn(`  ⚠️  Failed to delete ${file}: ${unlinkError.message}`);
+              }
+            }
+          }
+
+          if (relatedFiles.length > 0) {
+            console.log(`✅ Cleaned up ${relatedFiles.length} file(s) for ${platform} (${timestamp})`);
+          }
+        } catch (fileError: any) {
+          console.warn(`⚠️  Cleanup failed for ${path.basename(filePath)}: ${fileError.message}`);
+        }
+      }
+
+      console.log('✅ File cleanup complete');
+    } catch (error: any) {
+      console.warn(`⚠️  File cleanup encountered an error: ${error.message}`);
+      // Don't throw - cleanup failure shouldn't fail the pipeline
     }
   }
 

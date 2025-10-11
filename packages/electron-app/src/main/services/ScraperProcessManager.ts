@@ -620,65 +620,7 @@ export class ScraperProcessManager extends EventEmitter {
 
     this.emit('process:completed', completionData);
 
-    // Clean up JSON files after successful Electron scraper run
-    if (success) {
-      this.cleanupJsonFiles(scrapingProcess.platform).catch(error => {
-        console.warn(`Failed to cleanup JSON files for ${scrapingProcess.platform}:`, error.message);
-      });
-    }
-  }
-
-  /**
-   * Clean up JSON files after successful scraper completion
-   */
-  private async cleanupJsonFiles(platform: string): Promise<void> {
-    const fs = await import('fs/promises');
-    const path = await import('path');
-
-    try {
-      // Define platform data directories
-      const dataDirs = [
-        `${platform}-data`,
-        `${platform}_data`,
-        'test-output' // In case any test files were created
-      ];
-
-      // Get current working directory (should be project root)
-      const projectRoot = process.cwd();
-
-      for (const dataDir of dataDirs) {
-        const dirPath = path.join(projectRoot, 'packages/scrapers', dataDir);
-
-        try {
-          const files = await fs.readdir(dirPath);
-
-          // Delete JSON files from today's scraper run
-          const today = new Date().toISOString().split('T')[0];
-          const filesToDelete = files.filter(file =>
-            file.endsWith('.json') && file.includes(today)
-          );
-
-          for (const file of filesToDelete) {
-            const filePath = path.join(dirPath, file);
-            await fs.unlink(filePath);
-            console.log(`Cleaned up JSON file: ${file}`);
-          }
-
-          if (filesToDelete.length > 0) {
-            console.log(`Cleaned up ${filesToDelete.length} JSON files for ${platform}`);
-          }
-
-        } catch (dirError: any) {
-          // Directory doesn't exist or can't be read - that's fine
-          if (dirError.code !== 'ENOENT') {
-            console.warn(`Warning: Could not access directory ${dirPath}:`, dirError.message);
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error(`Error during JSON cleanup for ${platform}:`, error.message);
-      throw error;
-    }
+    // Note: File cleanup now happens after successful pipeline completion in OrchestrationService
   }
 
   /**

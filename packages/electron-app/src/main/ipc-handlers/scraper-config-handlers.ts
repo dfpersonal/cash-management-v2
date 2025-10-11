@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron';
 import { ScraperProcessManager } from '../services/ScraperProcessManager';
 import { ScraperConfig } from '@cash-mgmt/shared';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export function registerScraperConfigHandlers(scraperManager: ScraperProcessManager) {
   
@@ -95,12 +97,12 @@ export function registerScraperConfigHandlers(scraperManager: ScraperProcessMana
   ipcMain.handle('scraper:reset-configs', async (event) => {
     try {
       const success = await scraperManager.resetScraperConfigs();
-      
+
       if (success) {
         // Emit event to notify renderer about reset
         event.sender.send('scraper:configs-reset');
       }
-      
+
       return {
         success,
         message: success ? 'Configurations reset to defaults' : 'Failed to reset configurations'
@@ -110,6 +112,66 @@ export function registerScraperConfigHandlers(scraperManager: ScraperProcessMana
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  });
+
+  // Get available JSON files from scrapers data directory
+  ipcMain.handle('scraper:get-available-json-files', async () => {
+    try {
+      // Get the scrapers data directory path
+      // Resolve relative to the electron-app package
+      const scrapersDataPath = path.resolve(__dirname, '../../../../scrapers/data');
+
+      console.log('[IPC] Scanning for JSON files in:', scrapersDataPath);
+
+      if (!fs.existsSync(scrapersDataPath)) {
+        console.warn('[IPC] Scrapers data directory not found:', scrapersDataPath);
+        return {
+          success: true,
+          data: []
+        };
+      }
+
+      const jsonFiles: string[] = [];
+
+      // Read subdirectories (flagstone, hl, ajbell, moneyfacts, etc.)
+      const subdirs = fs.readdirSync(scrapersDataPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+
+      console.log('[IPC] Found subdirectories:', subdirs);
+
+      // Scan each subdirectory for normalized JSON files
+      for (const subdir of subdirs) {
+        const subdirPath = path.join(scrapersDataPath, subdir);
+        const files = fs.readdirSync(subdirPath);
+
+        // Filter for normalized JSON files only
+        const normalizedFiles = files.filter(file =>
+          file.endsWith('.json') && file.includes('-normalized-')
+        );
+
+        console.log(`[IPC] Found ${normalizedFiles.length} normalized files in ${subdir}:`, normalizedFiles);
+
+        // Add full paths to the result
+        normalizedFiles.forEach(file => {
+          jsonFiles.push(path.join(subdirPath, file));
+        });
+      }
+
+      console.log(`[IPC] Total normalized JSON files found: ${jsonFiles.length}`);
+
+      return {
+        success: true,
+        data: jsonFiles
+      };
+    } catch (error) {
+      console.error('[IPC] Failed to get available JSON files:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        data: []
       };
     }
   });

@@ -254,19 +254,20 @@ export const ScraperDashboard: React.FC = () => {
     setState(prev => ({ ...prev, pipelineRunning: true, pipelineProgress: 'Starting pipeline...', pipelineError: null }));
 
     try {
-      // Get all JSON files from completed scraper processes
-      const jsonFiles: string[] = [];
+      // Get all available normalized JSON files from filesystem
+      const filesResult = await window.electronAPI.getAvailableJsonFiles();
 
-      for (const process of state.processes) {
-        if (process.status === 'completed' && process.results?.files) {
-          // Add all JSON files from the process
-          Object.values(process.results.files).forEach(filePath => {
-            if (filePath.endsWith('.json')) {
-              jsonFiles.push(filePath);
-            }
-          });
-        }
+      if (!filesResult.success) {
+        setState(prev => ({
+          ...prev,
+          pipelineRunning: false,
+          pipelineProgress: null,
+          pipelineError: filesResult.error || 'Failed to scan for JSON files'
+        }));
+        return;
       }
+
+      const jsonFiles = filesResult.data;
 
       if (jsonFiles.length === 0) {
         setState(prev => ({
@@ -277,6 +278,8 @@ export const ScraperDashboard: React.FC = () => {
         }));
         return;
       }
+
+      console.log(`Found ${jsonFiles.length} normalized JSON files for pipeline:`, jsonFiles);
 
       const result = await window.electronAPI.executePipeline(jsonFiles);
 
