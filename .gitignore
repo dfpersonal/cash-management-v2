@@ -52,3 +52,4 @@ temp/
 # Electron
 out/
 electron-builder-output/
+/packages/scrapers/data
