@@ -12,7 +12,6 @@ import {
   CompletionData,
   TriggerScraperResponse
 } from '@cash-mgmt/shared';
-import { getDeduplicationOrchestrator, initializeDeduplicationOrchestrator } from '@cash-mgmt/pipeline';
 import { LogCategory } from '@cash-mgmt/shared';
 
 export class ScraperProcessManager extends EventEmitter {
@@ -20,8 +19,6 @@ export class ScraperProcessManager extends EventEmitter {
   private activeProcesses: Map<string, ChildProcess> = new Map();
   private databasePath: string;
   private scraperConfigs: Map<string, ScraperConfig> = new Map();
-  private deduplicationEnabled: boolean = true;
-  private deduplicationInitialized: boolean = false;
 
   // Platform configurations based on puppeteer-scraper package.json
   private platforms: Platform[] = [
@@ -60,117 +57,6 @@ export class ScraperProcessManager extends EventEmitter {
     super();
     this.databasePath = databasePath || path.join(__dirname, '../../../../../data/database/cash_savings.db');
     this.loadScraperConfigs();
-    this.initializeDeduplication();
-  }
-
-  /**
-   * Initialize deduplication orchestrator for automatic processing
-   */
-  private async initializeDeduplication(): Promise<void> {
-    if (!this.deduplicationEnabled || this.deduplicationInitialized) {
-      return;
-    }
-
-    try {
-      console.log(`${LogCategory.DEBUG} 🔧 Initializing deduplication orchestrator...`);
-
-      const sqlite3 = require('sqlite3').verbose();
-      const db = new sqlite3.Database(this.databasePath);
-
-      // Initialize the global deduplication orchestrator
-      const orchestrator = await initializeDeduplicationOrchestrator(db, {
-        enableAutomaticProcessing: true,
-        processingTimeoutMs: 30000,
-        maxRetries: 3,
-        circuitBreakerThreshold: 3,
-        enableFallbackProcessing: true
-      });
-
-      // Set up event forwarding from this ScraperProcessManager to the orchestrator
-      this.on('process:completed', (completionData: CompletionData) => {
-        if (completionData.success) {
-          console.log(`${LogCategory.DEBUG} ✅ Scraper completed successfully, triggering deduplication`);
-
-          // Emit scraper completion event to orchestrator
-          orchestrator.emit('scraper:completed', {
-            type: 'scraper:completed',
-            source: `scraper_${completionData.processId}`,
-            data: completionData,
-            timestamp: new Date()
-          });
-        } else {
-          console.log(`${LogCategory.DEBUG} ❌ Scraper failed, skipping deduplication`);
-        }
-      });
-
-      this.deduplicationInitialized = true;
-      console.log(`${LogCategory.DEBUG} ✅ Deduplication orchestrator initialized and event forwarding configured`);
-
-    } catch (error) {
-      console.log(`${LogCategory.WARNING} ⚠️ Failed to initialize deduplication orchestrator: ${error}`);
-      // Continue operation without deduplication
-      this.deduplicationEnabled = false;
-    }
-  }
-
-  /**
-   * Manually trigger deduplication processing
-   */
-  public async triggerDeduplication(): Promise<{ success: boolean; message: string }> {
-    if (!this.deduplicationEnabled) {
-      return { success: false, message: 'Deduplication is disabled' };
-    }
-
-    if (!this.deduplicationInitialized) {
-      return { success: false, message: 'Deduplication orchestrator not initialized' };
-    }
-
-    try {
-      const orchestrator = getDeduplicationOrchestrator();
-      await orchestrator.triggerManualProcessing();
-      return { success: true, message: 'Deduplication processing triggered successfully' };
-    } catch (error) {
-      console.log(`${LogCategory.ERROR} ❌ Failed to trigger manual deduplication: ${error}`);
-      return { success: false, message: `Failed to trigger deduplication: ${error}` };
-    }
-  }
-
-  /**
-   * Get deduplication orchestrator status
-   */
-  public getDeduplicationStatus(): {
-    enabled: boolean;
-    initialized: boolean;
-    stats?: any;
-    circuitBreakerState?: string;
-  } {
-    const status = {
-      enabled: this.deduplicationEnabled,
-      initialized: this.deduplicationInitialized
-    };
-
-    if (this.deduplicationInitialized) {
-      try {
-        const orchestrator = getDeduplicationOrchestrator();
-        return {
-          ...status,
-          stats: orchestrator.getStats(),
-          circuitBreakerState: orchestrator.getCircuitBreakerState()
-        };
-      } catch (error) {
-        console.log(`${LogCategory.WARNING} ⚠️ Failed to get orchestrator status: ${error}`);
-      }
-    }
-
-    return status;
-  }
-
-  /**
-   * Enable or disable automatic deduplication
-   */
-  public setDeduplicationEnabled(enabled: boolean): void {
-    this.deduplicationEnabled = enabled;
-    console.log(`${LogCategory.INFO} 🔧 Deduplication ${enabled ? 'enabled' : 'disabled'}`);
   }
 
   /**
