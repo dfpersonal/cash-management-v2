@@ -92,14 +92,21 @@ export class PipelineAudit {
     }
 
     // Only set database if auditing is enabled and we want database output
-    console.log(`🔍 PipelineAudit config: enabled=${this.config.enabled}, outputFormat=${this.config.outputFormat}, database=${!!database}`);
-    if (this.config.enabled && this.config.outputFormat === 'database' && database) {
-      this.db = database;
-      this.ensureAuditTables();
-      console.log(`✅ PipelineAudit database connection established`);
-    } else {
-      console.log(`⚠️  PipelineAudit database connection NOT established`);
+    if (this.config.enabled) {
+      console.log(`🔍 PipelineAudit enabled: outputFormat=${this.config.outputFormat}, level=${this.config.level}`);
+
+      if (this.config.outputFormat === 'database') {
+        if (database) {
+          this.db = database;
+          this.ensureAuditTables();
+          console.log(`✅ PipelineAudit database connection established`);
+        } else {
+          console.log(`⚠️  PipelineAudit: Database output requested but no database provided - falling back to console`);
+          this.config.outputFormat = 'console';
+        }
+      }
     }
+    // No message when audit is disabled (normal operation)
   }
 
   /**

@@ -328,8 +328,8 @@ export class ScraperProcessManager extends EventEmitter {
     scrapingProcess.startTime = new Date();
     this.processes.set(processId, scrapingProcess);
 
-    // Get puppeteer-scraper directory path
-    const scraperDir = path.join(__dirname, '../../../puppeteer-scraper');
+    // Get scrapers package directory path (monorepo structure)
+    const scraperDir = path.join(__dirname, '../../../scrapers');
 
     // Spawn child process
     const childProcess = spawn('bash', ['-c', scrapingProcess.command], {
@@ -514,9 +514,29 @@ export class ScraperProcessManager extends EventEmitter {
     // Parse error messages if failed
     if (!success) {
       const errorLines = fullOutput.split('\n')
-        .filter(line => line.includes('[Error]') || line.includes('Failed'))
-        .slice(0, 3); // First few errors
-      results.errorMessage = errorLines.join('\n');
+        .filter(line => {
+          const lowerLine = line.toLowerCase();
+          return line.includes('[Error]') ||
+                 line.includes('Failed') ||
+                 lowerLine.includes('error:') ||
+                 lowerLine.includes('enoent') ||
+                 lowerLine.includes('cannot') ||
+                 lowerLine.includes('exception') ||
+                 lowerLine.includes('fatal') ||
+                 lowerLine.includes('uncaught') ||
+                 lowerLine.includes('rejected');
+        })
+        .slice(0, 5); // First few errors
+
+      // If no explicit errors found but process failed, show exit code and last lines
+      if (errorLines.length === 0) {
+        const lastLines = fullOutput.split('\n')
+          .filter(line => line.trim())
+          .slice(-5);
+        results.errorMessage = `Process exited with code ${exitCode}\nLast output:\n${lastLines.join('\n')}`;
+      } else {
+        results.errorMessage = `Exit code ${exitCode}:\n${errorLines.join('\n')}`;
+      }
     }
 
     // Parse Platform Results section for file information
@@ -622,7 +642,7 @@ export class ScraperProcessManager extends EventEmitter {
       const projectRoot = process.cwd();
 
       for (const dataDir of dataDirs) {
-        const dirPath = path.join(projectRoot, 'puppeteer-scraper', dataDir);
+        const dirPath = path.join(projectRoot, 'packages/scrapers', dataDir);
 
         try {
           const files = await fs.readdir(dirPath);
