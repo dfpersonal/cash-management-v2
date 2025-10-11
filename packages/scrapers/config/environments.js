@@ -50,6 +50,7 @@ const environments = {
 const platformDirectories = {
   ajbell: 'ajbell',
   flagstone: 'flagstone',
+  hl: 'hargreaves-lansdown',
   hargreaves_lansdown: 'hargreaves-lansdown',
   moneyfacts: 'moneyfacts'
 };
@@ -98,7 +99,7 @@ export function getScraperConfig(platform, options = {}, env = null) {
     platform,
     outputDir: platformOutputDir,
     logDir: platformOutputDir, // Co-locate logs with JSON output
-    dbPath: path.join(projectRoot, '../data/database/cash_savings.db'), // Path to main database
+    dbPath: path.join(projectRoot, '../../data/database/cash_savings.db'), // Path to main database (up from scrapers -> packages -> root)
     ...options // Allow overrides
   };
 }

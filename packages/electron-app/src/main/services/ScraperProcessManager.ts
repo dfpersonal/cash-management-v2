@@ -279,38 +279,29 @@ export class ScraperProcessManager extends EventEmitter {
    * Build command string based on platform and options
    */
   private buildCommand(platform: string, options: ScrapingOptions): string {
-    // Map platform names to correct scraper files
-    const scraperMap: { [key: string]: string } = {
-      'flagstone': 'flagstone-scraper.js',
-      'hl': 'hl-scraper.js', 
-      'hargreaves-lansdown': 'hl-scraper.js',
-      'ajbell': 'ajbell-scraper.js',
-      'aj-bell': 'ajbell-scraper.js',
-      'moneyfacts': 'moneyfacts-scraper.js'
-    };
-    
-    const scraperFile = scraperMap[platform.toLowerCase()] || `${platform}-scraper.js`;
-    let command = `node ${scraperFile}`;
-    
+    // Modern scrapers use unified CLI runner
+    // Format: node src/runners/cli-runner.js --platform <platform> [options]
+    let command = `node src/runners/cli-runner.js --platform ${platform}`;
+
     // Add verbose flag if needed for debugging
     if (options.verbose) {
       command += ' --verbose';
     }
-    
-    // Add headless flag for browser control
-    if (!options.visible) {
-      command += ' --headless';
+
+    // Add headless flag for browser control (CLI runner defaults to headless)
+    if (options.visible) {
+      command += ' --no-headless';
     }
-    
+
     // MoneyFacts specific options
     if (platform === 'moneyfacts' && options.accountTypes) {
       command += ` --types=${options.accountTypes.join(',')}`;
     }
-    
+
     if (platform === 'moneyfacts' && options.excludeTypes) {
       command += ` --exclude=${options.excludeTypes.join(',')}`;
     }
-    
+
     return command;
   }
 
@@ -329,7 +320,8 @@ export class ScraperProcessManager extends EventEmitter {
     this.processes.set(processId, scrapingProcess);
 
     // Get scrapers package directory path (monorepo structure)
-    const scraperDir = path.join(__dirname, '../../../scrapers');
+    // __dirname is dist/main/services, so we need to go up 4 levels: services -> main -> dist -> electron-app -> packages
+    const scraperDir = path.join(__dirname, '../../../../scrapers');
 
     // Spawn child process
     const childProcess = spawn('bash', ['-c', scrapingProcess.command], {

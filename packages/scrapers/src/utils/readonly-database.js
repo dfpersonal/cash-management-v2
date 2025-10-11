@@ -14,8 +14,8 @@ const __dirname = path.dirname(__filename);
 export class ReadOnlyDatabase {
   constructor(dbPath = null) {
     // Default to the main cash_savings database
-    // From scrapers directory: go up to project root, then into data/database
-    this.dbPath = dbPath || path.resolve(__dirname, '../../../data/database/cash_savings.db');
+    // From src/utils: go up to scrapers -> packages -> root, then into data/database
+    this.dbPath = dbPath || path.resolve(__dirname, '../../../../data/database/cash_savings.db');
     this.db = null;
   }
 
