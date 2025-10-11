@@ -13,6 +13,7 @@ import {
   TriggerScraperResponse
 } from '@cash-mgmt/shared';
 import { LogCategory } from '@cash-mgmt/shared';
+import { exportPlatformsToJson, getDefaultPaths } from '../utils/exportPlatforms';
 
 export class ScraperProcessManager extends EventEmitter {
   private processes: Map<string, ScrapingProcess> = new Map();
@@ -312,6 +313,18 @@ export class ScraperProcessManager extends EventEmitter {
     const scrapingProcess = this.processes.get(processId);
     if (!scrapingProcess) {
       throw new Error(`Process ${processId} not found`);
+    }
+
+    // Export platforms to JSON if MoneyFacts (needs platform lookup)
+    if (scrapingProcess.platform === 'moneyfacts') {
+      console.log('🔄 Exporting platform data for MoneyFacts scraper...');
+      const paths = getDefaultPaths();
+      const exportResult = await exportPlatformsToJson(paths.dbPath, paths.outputPath);
+
+      if (!exportResult.success) {
+        console.warn(`⚠️  Platform export failed: ${exportResult.error}`);
+        console.warn('MoneyFacts will continue but may have issues with platform normalization');
+      }
     }
 
     // Update process status

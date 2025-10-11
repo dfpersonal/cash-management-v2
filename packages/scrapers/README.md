@@ -115,6 +115,13 @@ sequenceDiagram
 - 📊 **Quality Controls**: Data validation and confidence scoring
 - 🎛️ **Flexible Configuration**: Environment-based settings
 
+### ✅ Platform Lookup System
+- 📋 **JSON-Based Platform Data**: No native module dependencies (no better-sqlite3)
+- 🔄 **Auto-Export on Demand**: Platform data exported from database before scraper runs
+- 🚀 **Cross-Environment Compatible**: Runs in any Node.js context without ABI concerns
+- 📦 **Lightweight**: Uses simple JSON file for platform normalization data
+- 🎯 **MoneyFacts Integration**: Essential for accurate bank/platform parsing
+
 ### Core Infrastructure
 - 🏢 **Modular Architecture**: Organized src/ directory structure
 - 📝 **Enhanced Logging**: Categorized logging with file output, co-located with JSON data
@@ -144,6 +151,7 @@ scrapers/
 │   │   ├── data-normalizer.js # Data normalization
 │   │   ├── file-utils.js      # File operations
 │   │   ├── frn-resolver.js    # FRN lookup utilities
+│   │   ├── platform-lookup.js # JSON-based platform data lookup
 │   │   └── platform-normalizer.js # Platform normalization
 │   ├── parsers/               # Data parsing utilities
 │   │   ├── common-parser.js   # Shared parsing functions

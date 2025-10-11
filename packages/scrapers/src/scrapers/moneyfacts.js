@@ -6,7 +6,7 @@
 import { ScraperBase } from '../core/scraper-base.js';
 import { parseBankAndPlatform, validatePlatformParsing } from '../parsers/common-parser.js';
 import { DataNormalizer } from '../utils/data-normalizer.js';
-import { ReadOnlyDatabase } from '../utils/readonly-database.js';
+import { PlatformLookup } from '../utils/platform-lookup.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -53,9 +53,9 @@ class MoneyFactsScraper extends ScraperBase {
     
     // Pagination control - allows limiting clicks for testing
     this.maxPaginationClicks = options.maxPaginationClicks || 100;
-    
+
     this.knownPlatforms = null;
-    this.readOnlyDb = new ReadOnlyDatabase(options.dbPath);
+    this.platformLookup = new PlatformLookup(options.jsonPath);
   }
 
   getAccountTypesToProcess(options) {
@@ -348,8 +348,8 @@ class MoneyFactsScraper extends ScraperBase {
   }
 
   async customInitialization() {
-    // Load known platforms from read-only database for platform parsing
-    this.knownPlatforms = await this.readOnlyDb.getKnownPlatforms();
+    // Load known platforms from JSON file for platform parsing
+    this.knownPlatforms = await this.platformLookup.getKnownPlatforms();
     this.logger.debug(`Loaded ${this.knownPlatforms.length} known platforms for parsing`);
   }
 
@@ -1203,10 +1203,10 @@ class MoneyFactsScraper extends ScraperBase {
   }
 
   async customCleanup() {
-    // Close read-only database connection
-    if (this.readOnlyDb) {
-      this.readOnlyDb.close();
-      this.logger.debug('Read-only database connection closed');
+    // Close platform lookup (no-op for JSON-based approach, but kept for API compatibility)
+    if (this.platformLookup) {
+      this.platformLookup.close();
+      this.logger.debug('Platform lookup closed');
     }
   }
 
