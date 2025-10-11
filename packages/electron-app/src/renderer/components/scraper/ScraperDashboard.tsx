@@ -681,7 +681,30 @@ export const ScraperDashboard: React.FC = () => {
                         primary={
                           <Box display="flex" alignItems="center" gap={1}>
                             <Typography variant="body1">
-                              {process.platform}
+                              {process.platform === 'moneyfacts' && process.options ? (
+                                <>
+                                  {process.platform}
+                                  {process.options.accountTypes && process.options.accountTypes.length > 0 ? (
+                                    <Typography variant="body2" component="span" color="text.secondary" sx={{ ml: 0.5 }}>
+                                      ({process.options.accountTypes.map((type: string) =>
+                                        type.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                                      ).join(', ')})
+                                    </Typography>
+                                  ) : process.options.excludeTypes && process.options.excludeTypes.length > 0 ? (
+                                    <Typography variant="body2" component="span" color="text.secondary" sx={{ ml: 0.5 }}>
+                                      (All except {process.options.excludeTypes.map((type: string) =>
+                                        type.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                                      ).join(', ')})
+                                    </Typography>
+                                  ) : (
+                                    <Typography variant="body2" component="span" color="text.secondary" sx={{ ml: 0.5 }}>
+                                      (Sequential: All Types)
+                                    </Typography>
+                                  )}
+                                </>
+                              ) : (
+                                process.platform
+                              )}
                             </Typography>
                             {getStatusChip(process)}
                           </Box>
