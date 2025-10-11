@@ -48,8 +48,18 @@ npm run build
 ### Development
 
 ```bash
-# Run Electron app in development mode
+# Run Electron app in development mode (with DevTools)
 npm run electron
+
+# Run Electron app in production mode (no DevTools)
+cd packages/electron-app
+npm start
+
+# Enable DevTools in production build (for debugging)
+cd packages/electron-app
+NODE_ENV=development npm start
+# OR
+npm start -- --dev
 
 # Build all packages
 npm run build
@@ -60,6 +70,11 @@ npm test
 # Run linting
 npm run lint
 ```
+
+**Development vs Production Mode:**
+- **Development mode** (`npm run electron`): Opens with DevTools, React DevTools extension, and debug logging
+- **Production mode** (`npm start`): No DevTools, optimized for end-user experience
+- DevTools can be enabled in production builds using `NODE_ENV=development` or `--dev` flag for troubleshooting
 
 ### Turborepo Commands
 

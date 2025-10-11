@@ -99,12 +99,14 @@ class CashManagementApp {
     // Load the app
     this.mainWindow.loadFile(path.join(__dirname, '../index.html'));
 
-    // Always open DevTools for now to debug white screen
-    this.mainWindow.webContents.openDevTools();
+    // Open DevTools only in development mode
+    if (isDev) {
+      this.mainWindow.webContents.openDevTools();
+    }
 
     // Log renderer console messages to main process
-    this.mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-      console.log(`[Renderer Console] ${message}`);
+    this.mainWindow.webContents.on('console-message', (event) => {
+      console.log(`[Renderer Console] ${event.message}`);
     });
 
     // Show window when ready to prevent visual flash
