@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { Configuration as ConfigurationType, AppState } from '@cash-mgmt/shared';
 import { ScraperConfigSettings } from '../components/configuration/ScraperConfigSettings';
+import { FRNNormalizationSettings } from '../components/configuration/FRNNormalizationSettings';
 
 interface ConfigurationProps {
   appState: AppState;
@@ -654,6 +655,11 @@ export const Configuration: React.FC<ConfigurationProps> = ({ appState }) => {
               </Grid>
             </CardContent>
           </Card>
+        </Grid>
+
+        {/* FRN Name Normalization Configuration */}
+        <Grid item xs={12}>
+          <FRNNormalizationSettings />
         </Grid>
       </Grid>
 
