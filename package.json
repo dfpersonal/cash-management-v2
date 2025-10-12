@@ -16,13 +16,17 @@
     "electron": "turbo run dev --filter=@cash-mgmt/electron-app"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
+    "@types/node": "^20.10.0",
     "turbo": "^1.11.0",
-    "typescript": "^5.3.0",
-    "@types/node": "^20.10.0"
+    "typescript": "^5.3.0"
   },
   "packageManager": "npm@10.2.0",
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1"
   }
 }
