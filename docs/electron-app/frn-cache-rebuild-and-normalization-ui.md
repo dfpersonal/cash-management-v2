@@ -1,9 +1,9 @@
 # FRN Cache Rebuild Strategy & Normalization UI Implementation
 
-**Document Version:** 1.3
+**Document Version:** 1.4
 **Date:** 2025-10-12
-**Status:** Phase 2 Complete - Ready for Phase 3
-**Estimated Effort:** 2-4 hours remaining (Phase 1: ✅ Complete, Phase 2: ✅ Complete)
+**Status:** Phase 4 Complete - Ready for Phase 5
+**Estimated Effort:** 1-2 hours remaining (Phases 1-4: ✅ Complete)
 
 ---
 
@@ -668,18 +668,18 @@ ipcMain.handle('frn:complete-research', async (_, id: number, data: any) => {
 
 ---
 
-### Phase 3: Database Service Methods
+### Phase 3: Database Service Methods ✅ **DONE**
 
 **Objective:** Add methods to DatabaseService for loading and updating FRN normalization configuration.
 
-**Files to Modify:**
+**Files Modified:**
 - `packages/shared/src/services/DatabaseService.ts`
 
-#### Add Two New Methods
+#### Two New Methods Added (Lines 2033-2159)
 
-**Location:** Add near other configuration methods (around line 840-900)
+**Location:** Added after updateConfiguration method (line 2027)
 
-**1. getFRNNormalizationConfig() method:**
+**1. getFRNNormalizationConfig() method (lines 2033-2086):** ✅ **DONE**
 
 ```typescript
 /**
@@ -738,7 +738,7 @@ async getFRNNormalizationConfig(): Promise<{
 }
 ```
 
-**2. updateFRNNormalizationConfig() method:**
+**2. updateFRNNormalizationConfig() method (lines 2088-2159):** ✅ **DONE**
 
 ```typescript
 /**
@@ -823,21 +823,21 @@ async updateFRNNormalizationConfig(config: {
 
 ---
 
-### Phase 4: IPC Handlers & Preload API
+### Phase 4: IPC Handlers & Preload API ✅ **DONE**
 
 **Objective:** Expose FRN normalization config to renderer process via IPC.
 
-**Files to Modify:**
+**Files Modified:**
 - `packages/electron-app/src/main/main.ts`
 - `packages/electron-app/src/main/preload.ts`
 
-#### 4A. Add IPC Handlers
+#### 4A. Add IPC Handlers ✅ **DONE**
 
 **File:** `main.ts`
 
-**Location:** Add near other config handlers (after `update-configuration` handler, around line 420-430)
+**Location:** Added after update-configuration handler (lines 432-461)
 
-**1. get-frn-normalization-config handler:**
+**1. get-frn-normalization-config handler (lines 432-439):** ✅ **DONE**
 
 ```typescript
 ipcMain.handle('get-frn-normalization-config', async () => {
@@ -850,7 +850,7 @@ ipcMain.handle('get-frn-normalization-config', async () => {
 });
 ```
 
-**2. update-frn-normalization-config handler:**
+**2. update-frn-normalization-config handler (lines 441-461):** ✅ **DONE**
 
 ```typescript
 ipcMain.handle('update-frn-normalization-config', async (_, config: any) => {
@@ -876,13 +876,13 @@ ipcMain.handle('update-frn-normalization-config', async (_, config: any) => {
 });
 ```
 
-#### 4B. Update Preload API
+#### 4B. Update Preload API ✅ **DONE**
 
 **File:** `preload.ts`
 
-**Location:** Add to electronAPI object (in the contextBridge.exposeInMainWorld call, around line 20-80)
+**Location:** Added to electronAPI object (lines 27-28)
 
-FIND the existing API methods, ADD:
+ADDED these two methods:
 
 ```typescript
 getFRNNormalizationConfig: () => ipcRenderer.invoke('get-frn-normalization-config'),
@@ -1416,20 +1416,20 @@ CHANGE TO:
 - [ ] Test: Delete FRN override via UI, verify cache rebuilds (pending UI testing)
 - [ ] Test: Complete research queue item, verify cache rebuilds (pending UI testing)
 
-### Phase 3: Database Service Methods
-- [ ] Add `getFRNNormalizationConfig()` method to DatabaseService
-- [ ] Add `updateFRNNormalizationConfig()` method to DatabaseService
-- [ ] Test: Load normalization config from database
-- [ ] Test: Update normalization config, verify transaction rollback on error
+### Phase 3: Database Service Methods ✅ **COMPLETE**
+- [x] Add `getFRNNormalizationConfig()` method to DatabaseService (lines 2033-2086)
+- [x] Add `updateFRNNormalizationConfig()` method to DatabaseService (lines 2088-2159)
+- [ ] Test: Load normalization config from database (pending UI)
+- [ ] Test: Update normalization config, verify transaction rollback on error (pending UI)
 
-### Phase 4: IPC Handlers & Preload
-- [ ] Add `get-frn-normalization-config` IPC handler in main.ts
-- [ ] Add `update-frn-normalization-config` IPC handler in main.ts
-- [ ] Add cache rebuild to `update-frn-normalization-config` handler
-- [ ] Add `getFRNNormalizationConfig` to preload.ts
-- [ ] Add `updateFRNNormalizationConfig` to preload.ts
-- [ ] Test: Renderer can load config
-- [ ] Test: Renderer can update config
+### Phase 4: IPC Handlers & Preload ✅ **COMPLETE**
+- [x] Add `get-frn-normalization-config` IPC handler in main.ts (lines 432-439)
+- [x] Add `update-frn-normalization-config` IPC handler in main.ts (lines 441-461)
+- [x] Add cache rebuild to `update-frn-normalization-config` handler
+- [x] Add `getFRNNormalizationConfig` to preload.ts (line 27)
+- [x] Add `updateFRNNormalizationConfig` to preload.ts (line 28)
+- [ ] Test: Renderer can load config (pending UI)
+- [ ] Test: Renderer can update config (pending UI)
 
 ### Phase 5: UI Component
 - [ ] Create FRNNormalizationSettings.tsx component
