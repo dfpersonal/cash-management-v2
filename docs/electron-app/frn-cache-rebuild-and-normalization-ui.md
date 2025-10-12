@@ -1,10 +1,9 @@
 # FRN Cache Rebuild Strategy & Normalization UI Implementation
 
-**Document Version:** 1.2
+**Document Version:** 1.3
 **Date:** 2025-10-12
-**Status:** Phase 1 Complete - Ready for Phase 2
-**Estimated Effort:** 3-5 hours remaining (Phase 1: ✅ Complete)
-**Phase 2 Update:** Four handlers require cache rebuild (not three) - includes `frn:complete-research`
+**Status:** Phase 2 Complete - Ready for Phase 3
+**Estimated Effort:** 2-4 hours remaining (Phase 1: ✅ Complete, Phase 2: ✅ Complete)
 
 ---
 
@@ -20,11 +19,11 @@ This document outlines a comprehensive solution to address two critical issues i
 
 **Phase 1**: Simplify startup cache rebuild by removing fragile version checking and always rebuilding the cache (50-200ms overhead acceptable for desktop app). ✅ **COMPLETE**
 
-**Phase 2**: Add runtime cache invalidation hooks to **four** IPC handlers so UI changes trigger immediate cache rebuilds:
-- `frn:create-override` - Direct manual override creation
-- `frn:update-override` - Direct manual override update
-- `frn:delete-override` - Direct manual override deletion
-- `frn:complete-research` - **NEW** - Triggers `promote_researched_frn` database trigger that auto-inserts into `frn_manual_overrides`
+**Phase 2**: Add runtime cache invalidation hooks to **four** IPC handlers so UI changes trigger immediate cache rebuilds. ✅ **COMPLETE**
+- ✅ `frn:create-override` - Direct manual override creation
+- ✅ `frn:update-override` - Direct manual override update
+- ✅ `frn:delete-override` - Direct manual override deletion
+- ✅ `frn:complete-research` - Triggers `promote_researched_frn` database trigger that auto-inserts into `frn_manual_overrides`
 
 **Phase 3-5**: Build complete UI for managing normalization rules with automatic cache rebuild on save.
 
@@ -448,43 +447,36 @@ Removed obsolete `frn_lookup_cache_version` from:
 **Files to Modify:**
 - `packages/electron-app/src/main/main.ts`
 
-#### 2A. Store FRNMatchingService Instance
+#### 2A. Store FRNMatchingService Instance ✅ **DONE**
 
 **File:** `main.ts`
 
-**1. Add import at top of file (after existing imports):**
+**1. Add import at top of file (line 6):** ✅ **DONE**
 
 ```typescript
-import { FRNMatchingService } from '@cash-mgmt/pipeline/src/services/FRNMatchingService';
+import { OrchestrationService, FRNMatchingService } from '@cash-mgmt/pipeline';
 ```
 
-**2. Add property to CashManagementApp class (around line 40-50 with other properties):**
+**2. Add property to CashManagementApp class (line 29):** ✅ **DONE**
 
 ```typescript
 private frnMatchingService: FRNMatchingService | null = null;
 ```
 
-**3. Initialize in initialize() method (after OrchestrationService init, around line 150-160):**
+**3. Initialize in initializeOrchestrationService() method (lines 187-191):** ✅ **DONE**
 
-FIND:
-```typescript
-// Initialize orchestration service
-this.orchestrationService = new OrchestrationService(this.db);
-await this.orchestrationService.initialize();
-```
-
-ADD AFTER:
+ADDED:
 ```typescript
 // Initialize FRN Matching Service for runtime cache management
 console.log('   Initializing FRN Matching Service for cache management...');
-this.frnMatchingService = new FRNMatchingService(this.db);
+this.frnMatchingService = new FRNMatchingService(new Database(databasePath));
 await this.frnMatchingService.loadConfiguration();
 console.log('   ✅ FRN Matching Service ready');
 ```
 
-**4. Cleanup in shutdown (in the main cleanup section, around line 250-260):**
+**4. Cleanup in shutdown (lines 1229-1232):** ✅ **DONE**
 
-FIND cleanup section, ADD:
+ADDED:
 ```typescript
 // Cleanup FRN Matching Service
 if (this.frnMatchingService) {
@@ -492,17 +484,17 @@ if (this.frnMatchingService) {
 }
 ```
 
-#### 2B. Add Cache Rebuild to FRN Override Handlers
+#### 2B. Add Cache Rebuild to FRN Override Handlers ✅ **DONE**
 
-**File:** `main.ts` (lines 929-954 and line 966)
+**File:** `main.ts` (lines 937-1030)
 
-**IMPORTANT:** There are FOUR handlers that need cache rebuild logic, not three. The fourth handler (`frn:complete-research`) triggers the database trigger `promote_researched_frn` which automatically inserts into `frn_manual_overrides`, so it also requires immediate cache rebuild.
+**IMPORTANT:** All FOUR handlers successfully updated with cache rebuild logic. The fourth handler (`frn:complete-research`) includes cache rebuild because it triggers the database trigger `promote_researched_frn` which automatically inserts into `frn_manual_overrides`.
 
-**Update all four handlers:**
+**All four handlers updated:**
 
-**1. frn:create-override handler:**
+**1. frn:create-override handler (lines 937-957):** ✅ **DONE**
 
-REPLACE:
+UPDATED:
 ```typescript
 ipcMain.handle('frn:create-override', async (_, override: any) => {
   try {
@@ -539,9 +531,9 @@ ipcMain.handle('frn:create-override', async (_, override: any) => {
 });
 ```
 
-**2. frn:update-override handler:**
+**2. frn:update-override handler (lines 959-978):** ✅ **DONE**
 
-REPLACE:
+UPDATED:
 ```typescript
 ipcMain.handle('frn:update-override', async (_, id: number, updates: any) => {
   try {
@@ -577,9 +569,9 @@ ipcMain.handle('frn:update-override', async (_, id: number, updates: any) => {
 });
 ```
 
-**3. frn:delete-override handler:**
+**3. frn:delete-override handler (lines 980-999):** ✅ **DONE**
 
-REPLACE:
+UPDATED:
 ```typescript
 ipcMain.handle('frn:delete-override', async (_, id: number) => {
   try {
@@ -615,9 +607,9 @@ ipcMain.handle('frn:delete-override', async (_, id: number) => {
 });
 ```
 
-**4. frn:complete-research handler:**
+**4. frn:complete-research handler (lines 1010-1030):** ✅ **DONE**
 
-**NOTE:** This handler triggers the database trigger `promote_researched_frn`, which automatically inserts a new row into `frn_manual_overrides`. Therefore, cache rebuild must happen here as well.
+**NOTE:** This handler triggers the database trigger `promote_researched_frn`, which automatically inserts a new row into `frn_manual_overrides`. Cache rebuild logic was successfully added.
 
 **Database Trigger Reference:**
 ```sql
@@ -630,7 +622,7 @@ BEGIN
 END;
 ```
 
-REPLACE:
+UPDATED:
 ```typescript
 ipcMain.handle('frn:complete-research', async (_, id: number, data: any) => {
   try {
@@ -1410,19 +1402,19 @@ CHANGE TO:
 - [x] Delete obsolete `frn_lookup_cache_version` from production database
 - [x] Test startup: Verify cache always rebuilds (57/57 tests passing)
 
-### Phase 2: Runtime Cache Invalidation
-- [ ] Add import for FRNMatchingService in main.ts
-- [ ] Add `frnMatchingService` property to CashManagementApp class
-- [ ] Initialize FRNMatchingService in main.ts `initialize()` method
-- [ ] Add cleanup for FRNMatchingService in shutdown
-- [ ] Update `frn:create-override` handler with cache rebuild
-- [ ] Update `frn:update-override` handler with cache rebuild
-- [ ] Update `frn:delete-override` handler with cache rebuild
-- [ ] Update `frn:complete-research` handler with cache rebuild (triggers DB trigger)
-- [ ] Test: Create FRN override via UI, verify cache rebuilds
-- [ ] Test: Update FRN override via UI, verify cache rebuilds
-- [ ] Test: Delete FRN override via UI, verify cache rebuilds
-- [ ] Test: Complete research queue item, verify cache rebuilds
+### Phase 2: Runtime Cache Invalidation ✅ **COMPLETE**
+- [x] Add import for FRNMatchingService in main.ts
+- [x] Add `frnMatchingService` property to CashManagementApp class
+- [x] Initialize FRNMatchingService in main.ts `initializeOrchestrationService()` method
+- [x] Add cleanup for FRNMatchingService in shutdown
+- [x] Update `frn:create-override` handler with cache rebuild
+- [x] Update `frn:update-override` handler with cache rebuild
+- [x] Update `frn:delete-override` handler with cache rebuild
+- [x] Update `frn:complete-research` handler with cache rebuild (triggers DB trigger)
+- [ ] Test: Create FRN override via UI, verify cache rebuilds (pending UI testing)
+- [ ] Test: Update FRN override via UI, verify cache rebuilds (pending UI testing)
+- [ ] Test: Delete FRN override via UI, verify cache rebuilds (pending UI testing)
+- [ ] Test: Complete research queue item, verify cache rebuilds (pending UI testing)
 
 ### Phase 3: Database Service Methods
 - [ ] Add `getFRNNormalizationConfig()` method to DatabaseService
