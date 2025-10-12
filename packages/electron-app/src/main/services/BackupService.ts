@@ -53,7 +53,7 @@ export class BackupService {
 
           // Single consolidated message
           const cleanupMsg = cleanedCount > 0 ? ` [cleaned up ${cleanedCount} old backup${cleanedCount > 1 ? 's' : ''}]` : '';
-          console.log(`   ✅ Backup: ${backupFileName} (${(backupSize / 1024 / 1024).toFixed(2)} MB)${cleanupMsg}`);
+          console.log(`✅ Backup: ${backupFileName} (${(backupSize / 1024 / 1024).toFixed(2)} MB)${cleanupMsg}`);
 
           return backupPath;
         } else {

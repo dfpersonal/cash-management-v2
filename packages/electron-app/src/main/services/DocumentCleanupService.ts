@@ -28,13 +28,13 @@ export class DocumentCleanupService {
     this.performCleanup()
       .then(result => {
         if (result.deleted_count > 0) {
-          console.log(`   ✅ Document cleanup: removed ${result.deleted_count} file${result.deleted_count > 1 ? 's' : ''}, freed ${this.formatFileSize(result.freed_space ?? 0)} (24h schedule, ${TRASH_RETENTION_DAYS}d retention)`);
+          console.log(`✅ Document cleanup: removed ${result.deleted_count} file${result.deleted_count > 1 ? 's' : ''}, freed ${this.formatFileSize(result.freed_space ?? 0)} (24h schedule, ${TRASH_RETENTION_DAYS}d retention)`);
         } else {
-          console.log(`   ✅ Document cleanup: checked, no files to remove (24h schedule, ${TRASH_RETENTION_DAYS}d retention)`);
+          console.log(`✅ Document cleanup: checked, no files to remove (24h schedule, ${TRASH_RETENTION_DAYS}d retention)`);
         }
       })
       .catch(error => {
-        console.error(`   ⚠️ Document cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`⚠️ Document cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
       });
 
     // Schedule periodic cleanup (silently)

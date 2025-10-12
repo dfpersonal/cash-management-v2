@@ -479,6 +479,4 @@ export function registerTransactionHandlers(db: Database): void {
       throw error;
     }
   });
-
-  console.log('[Info] Transaction IPC handlers registered successfully');
 }

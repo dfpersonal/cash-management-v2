@@ -66,7 +66,7 @@ class CashManagementApp {
 
       this.setupMenu();
 
-      console.log('\n✅ Application ready\n');
+      console.log('\n✅ Application started\n');
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -118,11 +118,12 @@ class CashManagementApp {
     }
 
     // Log renderer console messages to main process (errors and warnings only)
-    this.mainWindow.webContents.on('console-message', (_event, level, message) => {
-      // Only log errors (level 3) and warnings (level 2) to avoid verbose output
-      if (level >= 2) {
-        const levelStr = level === 3 ? 'ERROR' : 'WARN';
-        console.log(`[Renderer ${levelStr}] ${message}`);
+    this.mainWindow.webContents.on('console-message', (details) => {
+      // Only log errors and warnings to avoid verbose output
+      // Level is now a string: 'info', 'warning', 'error', 'debug'
+      if (details.level === 'error' || details.level === 'warning') {
+        const levelStr = details.level === 'error' ? 'ERROR' : 'WARN';
+        console.log(`[Renderer ${levelStr}] ${details.message}`);
       }
     });
 
@@ -149,7 +150,7 @@ class CashManagementApp {
         const backupPath = await backupService.createBackup();
 
         if (!backupPath) {
-          console.warn('   ⚠️ Backup creation failed - continuing with app startup');
+          console.warn('⚠️ Backup creation failed - continuing with app startup');
         }
 
         // Show notification to user
@@ -162,7 +163,7 @@ class CashManagementApp {
       }
 
       this.databaseService = new DatabaseService(databasePath);
-      console.log(`   ✅ Database initialized: ${path.basename(databasePath)}`);
+      console.log(`✅ Database initialized: ${path.basename(databasePath)}`);
     } catch (error) {
       console.error('Failed to initialize database:', error);
     }
@@ -215,7 +216,7 @@ class CashManagementApp {
         this.mainWindow?.webContents.send('scraper:error', data);
       });
 
-      console.log('   ✅ Scraper process manager initialized');
+      console.log('✅ Scraper process manager initialized');
     } catch (error) {
       console.error('Failed to initialize scraper manager:', error);
     }
@@ -261,7 +262,7 @@ class CashManagementApp {
       registerOrchestratorHandlers(this.orchestrationService, this.mainWindow);
     }
 
-    console.log('   ✅ All handlers registered');
+    console.log('✅ All handlers registered');
 
     // Portfolio data handlers
     ipcMain.handle('get-portfolio-summary', async () => {

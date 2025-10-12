@@ -649,6 +649,4 @@ export function registerDocumentHandlers(db: Database): void {
       return { success: false, deleted_count: 0, error: error.message };
     }
   });
-
-  console.log('[DocumentHandlers] All document IPC handlers registered successfully');
 }

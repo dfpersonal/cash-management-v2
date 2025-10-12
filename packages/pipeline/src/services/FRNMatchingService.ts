@@ -141,7 +141,6 @@ export class FRNMatchingService extends EventEmitter {
       verboseMode: false
     });
 
-    this.logger.info('FRN Matching Service initializing...');
   }
 
   /**
@@ -181,10 +180,10 @@ export class FRNMatchingService extends EventEmitter {
 
       // Rebuild lookup helper cache if normalization config changed
       if (this.hasNormalizationConfigChanged()) {
-        this.logger.info('   Normalization config changed, rebuilding FRN lookup cache...');
+        console.log('Normalization config changed, rebuilding FRN lookup cache...');
         await this.rebuildLookupHelperCache();
       } else {
-        this.logger.info('   ✅ FRN lookup cache up to date');
+        console.log('✅ FRN lookup cache up to date');
       }
 
 
@@ -1112,7 +1111,7 @@ export class FRNMatchingService extends EventEmitter {
       const count = this.db.prepare('SELECT COUNT(*) as count FROM frn_lookup_helper_cache').get() as { count: number };
       const elapsed = Date.now() - startTime;
 
-      this.logger.info(`   ✅ FRN lookup cache rebuilt: ${count.count} entries (${elapsed}ms)`);
+      console.log(`✅ FRN lookup cache rebuilt: ${count.count} entries (${elapsed}ms)`);
     } catch (error) {
       this.logger.error(`Failed to rebuild lookup helper cache: ${error}`);
       throw error;
