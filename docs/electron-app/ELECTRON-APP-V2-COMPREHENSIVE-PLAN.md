@@ -1,8 +1,8 @@
 # Electron App V2: Comprehensive Integration Plan
 
-**Document Version**: 2.0
-**Last Updated**: 2025-10-07
-**Status**: Ready for Implementation
+**Document Version**: 2.1
+**Last Updated**: 2025-10-12
+**Status**: Ready for Implementation (with FRN cache improvements implemented)
 
 ---
 
@@ -490,7 +490,54 @@ export class ReportPDFExporter {
 
 ### 5. FRN Management (Existing - Enhanced)
 
-[Same as original plan - 5 tabs with pipeline integration]
+**Route**: `/frn-management`
+**Access**: All users
+
+#### 5-Tab Structure
+
+**Tab 1: FRN Dashboard**
+- Overview of FRN matching health
+- Match rate statistics
+- Research queue summary
+- Cache status and last rebuild time
+
+**Tab 2: Manual Overrides**
+- MUI DataGrid with all manual overrides
+- Create/Edit/Delete capabilities
+- Cache rebuilds automatically on changes ✅
+
+**Tab 3: Research Queue**
+- Unmatched institutions requiring research
+- Complete research → auto-creates override → cache rebuilds ✅
+- Priority sorting
+
+**Tab 4: FRN Lookup Cache**
+- Cache statistics (entry count, source breakdown)
+- Last rebuild timestamp
+- Manual rebuild trigger
+- **Now rebuilds automatically at startup and on any data change** ✅
+
+**Tab 5: Bank of England Data**
+- BOE institutions table
+- Shared brands mapping
+- Data import/sync tools
+
+#### Cache Rebuild Integration (✅ Implemented)
+
+The FRN lookup cache now maintains consistency automatically:
+
+**Startup**:
+- Cache always rebuilds unconditionally (50-200ms)
+- No version checking complexity
+- Guaranteed fresh on every app start
+
+**Runtime**:
+- Cache rebuilds immediately when:
+  - Manual override created/updated/deleted (Tab 2)
+  - Research queue item completed (Tab 3)
+  - Normalization config changes (see Configuration page)
+- Console logging shows rebuild activity
+- Non-blocking error handling
 
 ### 6. Product Catalog (NEW)
 
@@ -498,7 +545,42 @@ export class ReportPDFExporter {
 
 ### 7. Settings (Restructured)
 
-[Same as original plan - Basic/Power user modes, pipeline configuration]
+**Route**: `/settings`
+**Access**: All users
+
+#### Tab Structure (3 tabs)
+
+**Tab 1: User Preferences**
+- User mode: Basic / Power User toggle
+- Display preferences (theme, density)
+- Default views
+- Notification settings
+
+**Tab 2: Portfolio Configuration**
+- FSCS limit (default £85,000)
+- Concentration thresholds
+- Minimum liquidity targets
+- Risk tolerance settings
+- Balance checking configuration
+
+**Tab 3: FRN Normalization Rules** (✅ Implemented)
+- **Bank name normalization configuration**
+- Prefixes to remove (e.g., "THE")
+- Suffixes to remove (e.g., "LIMITED", "PLC")
+- Abbreviation expansions (e.g., "CO" → "COMPANY")
+- **Save triggers automatic cache rebuild**
+- Visual feedback during save operation
+
+**Component**: `FRNNormalizationSettings.tsx` (441 lines)
+- Currently in Configuration page (packages/electron-app/src/renderer/components/configuration/)
+- **Will move to Settings page Tab 3 in refactored architecture**
+- Features:
+  - Add/remove prefixes with chip display
+  - Add/remove suffixes with chip display
+  - Abbreviation table with dialog for adding new entries
+  - Real-time validation
+  - Success/error alerts
+  - Automatic FRN cache rebuild on save
 
 ### 8. Audit & Diagnostics (NEW - Power User Only)
 
@@ -689,7 +771,7 @@ CREATE TABLE IF NOT EXISTS report_history (
 'orchestrator:get-audit-stats'
 ```
 
-### Configuration (Existing)
+### Configuration (Existing + Enhanced) ✅
 ```typescript
 'orchestrator:update-config'
 'orchestrator:validate-config'
@@ -699,6 +781,10 @@ CREATE TABLE IF NOT EXISTS report_history (
 'orchestrator:restore-defaults'
 'orchestrator:export-config'
 'orchestrator:import-config'
+
+// FRN Normalization Config (NEW - ✅ Implemented)
+'get-frn-normalization-config' // Load prefixes, suffixes, abbreviations
+'update-frn-normalization-config' // Save config + trigger cache rebuild
 ```
 
 ### Product Catalog (Existing)
@@ -765,7 +851,8 @@ CREATE TABLE IF NOT EXISTS report_history (
 ├── Reports.tsx (NEW) ⭐
 ├── ProductCatalog.tsx (new)
 ├── AuditDiagnostics.tsx (new, power user)
-└── PortfolioManagement.tsx (enhanced with 3-tab structure)
+├── PortfolioManagement.tsx (enhanced with 3-tab structure)
+└── Settings.tsx (restructured with 3 tabs)
 
 /renderer/components/allocation/ (NEW) ⭐
 ├── AllocationTargetsTab.tsx
@@ -849,6 +936,25 @@ CREATE TABLE IF NOT EXISTS report_history (
 ├── AllocationHealthCard.tsx (NEW) ⭐
 ├── ActionableInsightsPanel.tsx
 └── PowerUserMetrics.tsx
+
+/renderer/components/settings/ (NEW) ⭐
+├── UserPreferencesTab.tsx
+│   - Basic/Power user mode toggle
+│   - Display preferences
+├── PortfolioConfigTab.tsx
+│   - FSCS limits
+│   - Risk tolerance
+│   - Balance checking config
+└── FRNNormalizationTab.tsx
+    - Wraps FRNNormalizationSettings component
+    - Currently: packages/electron-app/src/renderer/components/configuration/FRNNormalizationSettings.tsx (✅ Implemented - 441 lines)
+    - Will move to: packages/electron-app/src/renderer/components/settings/
+    - Features:
+      • Add/remove prefixes (chips)
+      • Add/remove suffixes (chips)
+      • Abbreviation table with add dialog
+      • Auto cache rebuild on save
+      • Success/error alerts
 
 /main/services/ (Main Process)
 ├── ReportPDFExporter.ts (NEW - Puppeteer) ⭐
@@ -1191,6 +1297,14 @@ overall_health = weighted_average([
   - 8-tier strategic allocation system
   - Portfolio health scoring
   - Estimated timeline: 27-39 days (vs 20-28 for v1.0)
+- **v2.1** (2025-10-12): FRN Cache Rebuild & Normalization UI Implementation ✅
+  - **Implemented**: Simplified FRN cache rebuild strategy (always rebuild at startup)
+  - **Implemented**: Runtime cache invalidation (4 IPC handlers with auto-rebuild)
+  - **Implemented**: FRNNormalizationSettings UI component (441 lines)
+  - **Implemented**: Database service methods for normalization config
+  - **Implemented**: IPC handlers: `get-frn-normalization-config`, `update-frn-normalization-config`
+  - **Component Location**: Currently in Configuration page, will move to Settings Tab 3 in refactored architecture
+  - **Documentation**: See `/docs/electron-app/frn-cache-rebuild-and-normalization-ui.md` for full implementation details
 
 ---
 
