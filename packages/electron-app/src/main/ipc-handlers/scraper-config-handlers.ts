@@ -123,8 +123,6 @@ export function registerScraperConfigHandlers(scraperManager: ScraperProcessMana
       // Resolve relative to the electron-app package
       const scrapersDataPath = path.resolve(__dirname, '../../../../scrapers/data');
 
-      console.log('[IPC] Scanning for JSON files in:', scrapersDataPath);
-
       if (!fs.existsSync(scrapersDataPath)) {
         console.warn('[IPC] Scrapers data directory not found:', scrapersDataPath);
         return {
@@ -140,8 +138,6 @@ export function registerScraperConfigHandlers(scraperManager: ScraperProcessMana
         .filter(dirent => dirent.isDirectory())
         .map(dirent => dirent.name);
 
-      console.log('[IPC] Found subdirectories:', subdirs);
-
       // Scan each subdirectory for normalized JSON files
       for (const subdir of subdirs) {
         const subdirPath = path.join(scrapersDataPath, subdir);
@@ -152,15 +148,16 @@ export function registerScraperConfigHandlers(scraperManager: ScraperProcessMana
           file.endsWith('.json') && file.includes('-normalized-')
         );
 
-        console.log(`[IPC] Found ${normalizedFiles.length} normalized files in ${subdir}:`, normalizedFiles);
-
         // Add full paths to the result
         normalizedFiles.forEach(file => {
           jsonFiles.push(path.join(subdirPath, file));
         });
       }
 
-      console.log(`[IPC] Total normalized JSON files found: ${jsonFiles.length}`);
+      // Single summary message
+      if (jsonFiles.length > 0) {
+        console.log(`📊 Found ${jsonFiles.length} normalized JSON files ready for pipeline`);
+      }
 
       return {
         success: true,

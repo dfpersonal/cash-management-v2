@@ -47,13 +47,26 @@ class CashManagementApp {
         }
       }
 
+      console.log('\n=== Cash Management System Starting ===\n');
+
       this.createMainWindow();
+
+      console.log('📦 Database');
       await this.initializeDatabase();
+
+      console.log('\n🔧 Pipeline Services');
       await this.initializeOrchestrationService();
+
+      console.log('\n🛠️ Background Services');
       this.initializeScraperManager();
       this.initializeDocumentCleanup();
+
+      console.log('\n🔌 IPC Handlers');
       this.setupIpcHandlers();
+
       this.setupMenu();
+
+      console.log('\n✅ Application ready\n');
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -104,9 +117,13 @@ class CashManagementApp {
       this.mainWindow.webContents.openDevTools();
     }
 
-    // Log renderer console messages to main process
-    this.mainWindow.webContents.on('console-message', (event) => {
-      console.log(`[Renderer Console] ${event.message}`);
+    // Log renderer console messages to main process (errors and warnings only)
+    this.mainWindow.webContents.on('console-message', (_event, level, message) => {
+      // Only log errors (level 3) and warnings (level 2) to avoid verbose output
+      if (level >= 2) {
+        const levelStr = level === 3 ? 'ERROR' : 'WARN';
+        console.log(`[Renderer ${levelStr}] ${message}`);
+      }
     });
 
     // Show window when ready to prevent visual flash
@@ -128,30 +145,24 @@ class CashManagementApp {
 
       // Create automatic backup on startup (only for production database)
       if (!process.env.DATABASE_PATH || process.env.DATABASE_PATH === defaultPath) {
-        console.log('\n📦 Creating database backup on startup...');
         const backupService = new BackupService(databasePath);
         const backupPath = await backupService.createBackup();
 
-        if (backupPath) {
-          console.log(`   Backup saved to: ${path.basename(backupPath)}`);
-
-          // Show notification to user
-          if (this.mainWindow) {
-            this.mainWindow.webContents.send('notification', {
-              type: 'success',
-              message: `Database backup created: ${path.basename(backupPath)}`
-            });
-          }
-        } else {
+        if (!backupPath) {
           console.warn('   ⚠️ Backup creation failed - continuing with app startup');
         }
-      } else {
-        console.log('   Skipping backup for test database');
+
+        // Show notification to user
+        if (backupPath && this.mainWindow) {
+          this.mainWindow.webContents.send('notification', {
+            type: 'success',
+            message: `Database backup created: ${path.basename(backupPath)}`
+          });
+        }
       }
 
       this.databaseService = new DatabaseService(databasePath);
-
-      console.log('\n✅ Database service initialized with path:', databasePath);
+      console.log(`   ✅ Database initialized: ${path.basename(databasePath)}`);
     } catch (error) {
       console.error('Failed to initialize database:', error);
     }
@@ -170,8 +181,6 @@ class CashManagementApp {
       // OrchestrationService creates its own better-sqlite3 connection
       this.orchestrationService = new OrchestrationService(new Database(databasePath), databasePath);
       await this.orchestrationService.initialize();
-
-      console.log('\n✅ Orchestration service initialized successfully');
     } catch (error) {
       console.error('Failed to initialize orchestration service:', error);
       throw error;
@@ -205,8 +214,8 @@ class CashManagementApp {
       this.scraperManager.on('process:error', (data) => {
         this.mainWindow?.webContents.send('scraper:error', data);
       });
-      
-      console.log('Scraper process manager initialized');
+
+      console.log('   ✅ Scraper process manager initialized');
     } catch (error) {
       console.error('Failed to initialize scraper manager:', error);
     }
@@ -223,8 +232,6 @@ class CashManagementApp {
 
       this.documentCleanupService = new DocumentCleanupService(db);
       this.documentCleanupService.start();
-
-      console.log('📄 Document cleanup service initialized and started');
     } catch (error) {
       console.error('Failed to initialize document cleanup service:', error);
     }
@@ -233,19 +240,17 @@ class CashManagementApp {
   private setupIpcHandlers(): void {
     // Register optimization handlers (FSCS and Rate Optimizer)
     registerOptimizationHandlers();
-    
+
     // Register scraper configuration handlers
     if (this.scraperManager) {
       registerScraperConfigHandlers(this.scraperManager);
     }
-    
+
     // Register transaction handlers with database
     if (this.databaseService) {
       const sqlite3 = require('sqlite3').verbose();
       const defaultPath = path.join(__dirname, '../../../../data/database/cash_savings.db');
       const dbPath = process.env.DATABASE_PATH || defaultPath;
-      console.log('🗄️ Main: Transaction handlers using database path:', dbPath);
-      console.log('🔧 Main: DATABASE_PATH environment variable:', process.env.DATABASE_PATH);
       const db = new sqlite3.Database(dbPath);
       registerTransactionHandlers(db);
       registerDocumentHandlers(db);
@@ -255,6 +260,8 @@ class CashManagementApp {
     if (this.orchestrationService && this.mainWindow) {
       registerOrchestratorHandlers(this.orchestrationService, this.mainWindow);
     }
+
+    console.log('   ✅ All handlers registered');
 
     // Portfolio data handlers
     ipcMain.handle('get-portfolio-summary', async () => {

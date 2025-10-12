@@ -11,6 +11,7 @@ import { ValidationTracker } from './JSONIngestionService';
 
 // Import EnrichedProduct interface from FRN Matching Service
 import { EnrichedProduct } from './FRNMatchingService';
+import { logger } from '../utils/PipelineLogger';
 
 // ============================================================================
 // TYPE DEFINITIONS FOR FSCS-COMPLIANT DEDUPLICATION
@@ -248,14 +249,14 @@ export class DeduplicationService extends EventEmitter {
   async processProducts(products: EnrichedProduct[]): Promise<DeduplicationOutput> {
     const startTime = Date.now();
     const callId = Math.random().toString(36).substr(2, 9);
-    console.log(`🔍 [${callId}] processProducts called with ${products.length} products`);
+    logger.debug(`🔍 [${callId}] processProducts called with ${products.length} products`);
 
     // Only generate batch ID if none was set by OrchestrationService
     if (!this.currentBatchId) {
       this.currentBatchId = this.generateBatchId();
     }
 
-    console.log(`🚀 Starting FSCS-compliant deduplication for ${products.length} products`);
+    logger.info(`🚀 Starting FSCS-compliant deduplication for ${products.length} products`);
 
     try {
       // Load configuration if not already loaded
@@ -298,7 +299,7 @@ export class DeduplicationService extends EventEmitter {
 
       // Phase 2: Group by business key
       const businessKeyGroups = this.groupByBusinessKey(enrichedProducts);
-      console.log(`📊 Created ${businessKeyGroups.size} business key groups`);
+      logger.info(`📊 Created ${businessKeyGroups.size} business key groups`);
 
       // Phase 3: Process each group for duplicates with FSCS compliance
       const selectedProducts: FinalProduct[] = [];
@@ -361,15 +362,15 @@ export class DeduplicationService extends EventEmitter {
         try {
           await this.persistAuditTrail(products, selectedProducts, auditTrail, endTime - startTime);
         } catch (error) {
-          console.warn(`⚠️ Audit trail persistence failed (continuing with deduplication): ${error instanceof Error ? error.message : String(error)}`);
+          logger.warn(`⚠️ Audit trail persistence failed (continuing with deduplication): ${error instanceof Error ? error.message : String(error)}`);
           // Don't throw - audit failure shouldn't break deduplication
         }
       } else {
-        console.log(`🔍 Audit disabled, skipping deduplication audit trail persistence`);
+        logger.debug(`🔍 Audit disabled, skipping deduplication audit trail persistence`);
       }
 
       // Generate statistics from audit trail
-      console.log(`🔍 About to generate statistics`);
+      logger.debug(`🔍 About to generate statistics`);
       const statistics = {
         processingTime: endTime - startTime,
         productsPerSecond: selectedProducts.length / ((endTime - startTime) / 1000),
@@ -381,9 +382,9 @@ export class DeduplicationService extends EventEmitter {
         },
         decisionBreakdown: {}
       };
-      console.log(`🔍 Statistics generated successfully (hardcoded fallback)`);
+      logger.debug(`🔍 Statistics generated successfully (hardcoded fallback)`);
 
-      console.log(`✅ [${callId}] FSCS-compliant deduplication completed: ${selectedProducts.length} products processed in ${statistics.processingTime}ms`);
+      logger.info(`✅ [${callId}] FSCS-compliant deduplication completed: ${selectedProducts.length} products processed in ${statistics.processingTime}ms`);
 
       const result = {
         selectedProducts,
@@ -391,16 +392,16 @@ export class DeduplicationService extends EventEmitter {
         statistics
       };
 
-      console.log(`🔍 [${callId}] Deduplication returning: selectedProducts.length=${result.selectedProducts.length}, type=${typeof result.selectedProducts}`);
-      console.log(`🔍 [${callId}] About to return result`);
+      logger.debug(`🔍 [${callId}] Deduplication returning: selectedProducts.length=${result.selectedProducts.length}, type=${typeof result.selectedProducts}`);
+      logger.debug(`🔍 [${callId}] About to return result`);
       return result;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`❌ [${callId}] FSCS-compliant deduplication failed: ${errorMessage}`);
+      logger.error(`❌ [${callId}] FSCS-compliant deduplication failed: ${errorMessage}`);
 
       // Log the call stack to help debug the weird async issue
-      console.error(`❌ [${callId}] Error stack:`, error instanceof Error ? error.stack : 'No stack');
+      logger.error(`❌ [${callId}] Error stack:`, error instanceof Error ? error.stack : 'No stack');
 
       // Handle critical errors that should abort the pipeline
       if (errorMessage.includes('DATA_CORRUPTION') ||
@@ -517,7 +518,7 @@ export class DeduplicationService extends EventEmitter {
         maxGroupSize: this.getRequiredNumber(configData, 'deduplication_max_group_size')
       };
 
-      console.log(`✅ Deduplication configuration loaded: ${Object.keys(configData).length} parameters`);
+      logger.info(`✅ Deduplication configuration loaded: ${Object.keys(configData).length} parameters`);
 
       // Load preferred platforms configuration
       await this.loadPreferredPlatforms();
@@ -526,7 +527,7 @@ export class DeduplicationService extends EventEmitter {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`❌ Failed to load deduplication configuration: ${errorMessage}`);
+      logger.error(`❌ Failed to load deduplication configuration: ${errorMessage}`);
       throw new Error(`CONFIG_LOAD_FAILED: ${errorMessage}`);
     }
   }
@@ -557,10 +558,10 @@ export class DeduplicationService extends EventEmitter {
         });
       }
 
-      console.log(`📋 Loaded ${this.preferredPlatforms.size} preferred platforms: ${Array.from(this.preferredPlatforms.keys()).join(', ')}`);
+      logger.info(`📋 Loaded ${this.preferredPlatforms.size} preferred platforms: ${Array.from(this.preferredPlatforms.keys()).join(', ')}`);
     } catch (error) {
       // Don't fail if preferred_platforms table doesn't exist yet - log warning instead
-      console.warn(`⚠️ Could not load preferred platforms: ${error}. Continuing without preferred platform configuration.`);
+      logger.warn(`⚠️ Could not load preferred platforms: ${error}. Continuing without preferred platform configuration.`);
     }
   }
 
@@ -1138,9 +1139,9 @@ export class DeduplicationService extends EventEmitter {
   private async clearAuditTrail(batchId: string): Promise<void> {
     try {
       this.db.prepare('DELETE FROM deduplication_audit WHERE batch_id = ?').run(batchId);
-      console.log(`🧹 Cleared audit trail for batch ${batchId}`);
+      logger.debug(`🧹 Cleared audit trail for batch ${batchId}`);
     } catch (error) {
-      console.warn(`Failed to clear audit trail: ${error}`);
+      logger.warn(`Failed to clear audit trail: ${error}`);
     }
   }
 
@@ -1162,9 +1163,9 @@ export class DeduplicationService extends EventEmitter {
       const frnBonus = product.frn ? this.config.frnQualityBonus : 0;
 
       // Note: Would insert audit entry in production
-      console.log(`🔍 AUDIT: business_key_generation - Business key generated for ${product.bankName} (quality: ${qualityScore.toFixed(3)})`);
+      logger.debug(`🔍 AUDIT: business_key_generation - Business key generated for ${product.bankName} (quality: ${qualityScore.toFixed(3)})`);
     } catch (error) {
-      console.warn(`Failed to log business key generation: ${error}`);
+      logger.warn(`Failed to log business key generation: ${error}`);
     }
   }
 
@@ -1237,10 +1238,10 @@ export class DeduplicationService extends EventEmitter {
         metadata: JSON.stringify(violationDetails)
       });
     } catch (error) {
-      console.warn(`Failed to log FSCS violation: ${error}`);
+      logger.warn(`Failed to log FSCS violation: ${error}`);
     }
 
-    console.warn(`⚠️ FSCS VIOLATION DETECTED: ${JSON.stringify(violationDetails)}`);
+    logger.warn(`⚠️ FSCS VIOLATION DETECTED: ${JSON.stringify(violationDetails)}`);
   }
 
   /**
@@ -1279,7 +1280,7 @@ export class DeduplicationService extends EventEmitter {
     }
 
     try {
-      console.log(`🔍 Attempting to persist business keys for ${enrichedProducts.length} products`);
+      logger.debug(`🔍 Attempting to persist business keys for ${enrichedProducts.length} products`);
 
       const updateStmt = this.db.prepare(`
         UPDATE available_products_raw
@@ -1305,9 +1306,9 @@ export class DeduplicationService extends EventEmitter {
       });
 
       const updatedCount = updateMany(enrichedProducts);
-      console.log(`✅ Updated business keys for ${updatedCount} products in available_products_raw (matched by characteristics)`);
+      logger.info(`✅ Updated business keys for ${updatedCount} products in available_products_raw (matched by characteristics)`);
     } catch (error) {
-      console.error(`❌ Failed to persist business keys to raw table: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error(`❌ Failed to persist business keys to raw table: ${error instanceof Error ? error.message : String(error)}`);
       // Don't throw - this is not critical for pipeline functionality
     }
   }
@@ -1480,10 +1481,10 @@ export class DeduplicationService extends EventEmitter {
     metadata: string;
   }): Promise<void> {
     // For now, log the audit entry for visibility
-    console.log(`🔍 AUDIT: ${entry.processingStep} - ${entry.selectionReason}`);
-    console.log(`   Product: ${entry.productId}, Business Key: ${entry.businessKey}`);
-    console.log(`   Quality Score: ${entry.qualityScore}, FSCS Compliant: ${entry.fscsCompliant}`);
-    console.log(`   Metadata: ${entry.metadata}`);
+    logger.debug(`🔍 AUDIT: ${entry.processingStep} - ${entry.selectionReason}`);
+    logger.debug(`   Product: ${entry.productId}, Business Key: ${entry.businessKey}`);
+    logger.debug(`   Quality Score: ${entry.qualityScore}, FSCS Compliant: ${entry.fscsCompliant}`);
+    logger.debug(`   Metadata: ${entry.metadata}`);
 
     // TODO: In production, could store individual audit events in a separate table
     // For now, the batch-level audit in deduplication_audit table is sufficient
@@ -1866,7 +1867,7 @@ export class DeduplicationService extends EventEmitter {
 
       transaction();
     } catch (error) {
-      console.warn(`⚠️ Failed to persist deduplication audit trail: ${error}`);
+      logger.warn(`⚠️ Failed to persist deduplication audit trail: ${error}`);
       // Don't throw - audit persistence failure shouldn't break deduplication processing
       // The audit system should be resilient and optional
     }
@@ -1881,6 +1882,6 @@ export class DeduplicationService extends EventEmitter {
     this.initialized = false;
     this.platformConfig.clear();
     this.preferredPlatforms.clear();
-    console.log('✅ FSCS-compliant Deduplication Service reset');
+    logger.info('✅ FSCS-compliant Deduplication Service reset');
   }
 }

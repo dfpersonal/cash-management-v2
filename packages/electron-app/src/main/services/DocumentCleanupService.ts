@@ -21,25 +21,28 @@ export class DocumentCleanupService {
    */
   start(): void {
     if (this.cleanupIntervalId) {
-      console.log('[DocumentCleanupService] Service already running');
-      return;
+      return; // Already running, silently skip
     }
 
-    console.log(`[DocumentCleanupService] Starting background cleanup service - will run every ${this.CLEANUP_INTERVAL_HOURS} hours`);
+    // Run cleanup immediately on startup and log result
+    this.performCleanup()
+      .then(result => {
+        if (result.deleted_count > 0) {
+          console.log(`   ✅ Document cleanup: removed ${result.deleted_count} file${result.deleted_count > 1 ? 's' : ''}, freed ${this.formatFileSize(result.freed_space ?? 0)} (24h schedule, ${TRASH_RETENTION_DAYS}d retention)`);
+        } else {
+          console.log(`   ✅ Document cleanup: checked, no files to remove (24h schedule, ${TRASH_RETENTION_DAYS}d retention)`);
+        }
+      })
+      .catch(error => {
+        console.error(`   ⚠️ Document cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
+      });
 
-    // Run cleanup immediately on startup
-    this.performCleanup().catch(error => {
-      console.error('[DocumentCleanupService] Initial cleanup failed:', error);
-    });
-
-    // Schedule periodic cleanup
+    // Schedule periodic cleanup (silently)
     this.cleanupIntervalId = setInterval(() => {
       this.performCleanup().catch(error => {
         console.error('[DocumentCleanupService] Scheduled cleanup failed:', error);
       });
     }, this.CLEANUP_INTERVAL_HOURS * 60 * 60 * 1000); // Convert hours to milliseconds
-
-    console.log('[DocumentCleanupService] Background service started successfully');
   }
 
   /**
@@ -58,24 +61,16 @@ export class DocumentCleanupService {
    */
   async performCleanup(): Promise<CleanupResponse> {
     try {
-      console.log(`[DocumentCleanupService] Starting cleanup - removing documents older than ${TRASH_RETENTION_DAYS} days`);
-
       // Get documents eligible for cleanup from database
       const eligibleDocs = await this.documentService.getDocumentsForCleanup();
 
       if (eligibleDocs.length === 0) {
-        console.log('[DocumentCleanupService] No documents need cleanup');
         return {
           success: true,
           deleted_count: 0,
           freed_space: 0
         };
       }
-
-      console.log(`[DocumentCleanupService] Found ${eligibleDocs.length} documents eligible for cleanup:`);
-      eligibleDocs.forEach(doc => {
-        console.log(`  - ID: ${doc.id}, File: ${doc.file_path}, Days in trash: ${Math.floor(doc.days_in_trash)}`);
-      });
 
       let totalDeletedCount = 0;
       let totalFreedSpace = 0;
@@ -84,12 +79,9 @@ export class DocumentCleanupService {
       // Process each document
       for (const doc of eligibleDocs) {
         try {
-          console.log(`[DocumentCleanupService] Processing document ID: ${doc.id}`);
-
           // Delete the physical file
           const fileResult = await this.fileManager.deleteFile(doc.file_path);
           if (!fileResult.success) {
-            console.warn(`[DocumentCleanupService] Failed to delete file ${doc.file_path}: ${fileResult.error}`);
             errors.push(`Failed to delete file for document ID ${doc.id}`);
             continue; // Skip database deletion if file deletion failed
           }
@@ -109,17 +101,13 @@ export class DocumentCleanupService {
           // Remove from database
           const dbResult = await this.documentService.permanentlyDeleteDocument(doc.id);
           if (!dbResult.success) {
-            console.error(`[DocumentCleanupService] Failed to delete database record for ID ${doc.id}: ${dbResult.error}`);
             errors.push(`Failed to delete database record for document ID ${doc.id}`);
             continue;
           }
 
           totalDeletedCount++;
           totalFreedSpace += fileSize;
-
-          console.log(`[DocumentCleanupService] Successfully deleted document ID: ${doc.id} (freed ${this.formatFileSize(fileSize)})`);
         } catch (error) {
-          console.error(`[DocumentCleanupService] Error processing document ID ${doc.id}:`, error);
           errors.push(`Error processing document ID ${doc.id}: ${error}`);
         }
       }
@@ -131,20 +119,9 @@ export class DocumentCleanupService {
         error: errors.length > 0 ? errors.join('; ') : undefined
       };
 
-      console.log(`[DocumentCleanupService] Cleanup completed:`, {
-        processed: eligibleDocs.length,
-        deleted: totalDeletedCount,
-        freed_space: this.formatFileSize(totalFreedSpace),
-        errors: errors.length
-      });
-
-      // Log detailed results
-      if (totalDeletedCount > 0) {
-        console.log(`[DocumentCleanupService] ✅ Successfully cleaned up ${totalDeletedCount} documents and freed ${this.formatFileSize(totalFreedSpace)} of disk space`);
-      }
-
+      // Log errors if any occurred
       if (errors.length > 0) {
-        console.error(`[DocumentCleanupService] ⚠️ Encountered ${errors.length} errors during cleanup:`, errors);
+        console.error(`[DocumentCleanupService] ⚠️ Encountered ${errors.length} error(s) during cleanup`);
       }
 
       return result;
@@ -153,6 +130,7 @@ export class DocumentCleanupService {
       return {
         success: false,
         deleted_count: 0,
+        freed_space: 0,
         error: `Cleanup failed: ${error}`
       };
     }

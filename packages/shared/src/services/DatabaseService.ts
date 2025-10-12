@@ -42,26 +42,21 @@ export class DatabaseService {
         console.error('Error opening database:', err);
         throw err;
       } else {
-        console.log('Connected to SQLite database at:', databasePath);
-        
         // Configure database for immediate write visibility
         this.db.run("PRAGMA synchronous = FULL", (err) => {
           if (err) console.error('Error setting synchronous mode:', err);
-          else console.log('Database synchronous mode set to FULL');
         });
-        
+
         // Use WAL mode for better concurrency
         this.db.run("PRAGMA journal_mode = WAL", (err) => {
           if (err) console.error('Error setting journal mode:', err);
-          else console.log('Database journal mode set to WAL');
         });
-        
+
         // Ensure read consistency
         this.db.run("PRAGMA read_uncommitted = 0", (err) => {
           if (err) console.error('Error setting read_uncommitted:', err);
-          else console.log('Database read consistency ensured');
         });
-        
+
         this.initializeBalanceUpdateTables();
         this.initializeAuditService();
       }
@@ -87,8 +82,6 @@ export class DatabaseService {
         `, (err) => {
           if (err) {
             console.error('Error creating balance_update_sessions table:', err);
-          } else {
-            console.log('Created balance_update_sessions table');
           }
         });
 
@@ -108,8 +101,6 @@ export class DatabaseService {
         `, (err) => {
           if (err) {
             console.error('Error creating balance_update_log table:', err);
-          } else {
-            console.log('Created balance_update_log table');
           }
         });
 
@@ -146,8 +137,6 @@ export class DatabaseService {
         this.db.run(`CREATE INDEX IF NOT EXISTS idx_deposits_next_check ON my_deposits(next_balance_check)`);
         this.db.run(`CREATE INDEX IF NOT EXISTS idx_deposits_frequency ON my_deposits(balance_update_frequency)`);
         this.db.run(`CREATE INDEX IF NOT EXISTS idx_pending_destination ON my_pending_deposits(destination_account_id)`);
-
-        console.log('Balance update tables and indexes initialized');
       } catch (error) {
         console.error('Error initializing balance update tables:', error);
       }

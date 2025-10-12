@@ -48,11 +48,12 @@ export class BackupService {
         const backupSize = fs.statSync(backupPath).size;
 
         if (backupSize === sourceSize) {
-          console.log(`✅ Database backup created successfully: ${backupFileName}`);
-          console.log(`   Size: ${(backupSize / 1024 / 1024).toFixed(2)} MB`);
+          // Clean up old backups first to get count
+          const cleanedCount = await this.cleanupOldBackups();
 
-          // Clean up old backups
-          await this.cleanupOldBackups();
+          // Single consolidated message
+          const cleanupMsg = cleanedCount > 0 ? ` [cleaned up ${cleanedCount} old backup${cleanedCount > 1 ? 's' : ''}]` : '';
+          console.log(`   ✅ Backup: ${backupFileName} (${(backupSize / 1024 / 1024).toFixed(2)} MB)${cleanupMsg}`);
 
           return backupPath;
         } else {
@@ -72,7 +73,7 @@ export class BackupService {
   /**
    * Clean up backups older than retention period
    */
-  private async cleanupOldBackups(): Promise<void> {
+  private async cleanupOldBackups(): Promise<number> {
     try {
       const files = fs.readdirSync(this.backupDir);
       const now = Date.now();
@@ -93,16 +94,13 @@ export class BackupService {
         if (fileAge > retentionMs) {
           fs.unlinkSync(filePath);
           deletedCount++;
-          console.log(`   Deleted old backup: ${file} (${Math.floor(fileAge / (24 * 60 * 60 * 1000))} days old)`);
         }
       }
 
-      if (deletedCount > 0) {
-        console.log(`   Cleaned up ${deletedCount} old backup(s)`);
-      }
+      return deletedCount;
     } catch (error) {
       console.error('Failed to cleanup old backups:', error);
-      // Don't throw - cleanup failure shouldn't prevent backup
+      return 0;
     }
   }
 
@@ -112,29 +110,23 @@ export class BackupService {
   private checkpointWAL(): void {
     try {
       const walPath = this.sourcePath + '-wal';
-      const shmPath = this.sourcePath + '-shm';
 
       // Check if WAL file exists and has content
       if (fs.existsSync(walPath)) {
         const walSize = fs.statSync(walPath).size;
         if (walSize > 0) {
-          console.log(`   Checkpointing WAL file (${(walSize / 1024).toFixed(2)} KB)...`);
-
           // Use sqlite3 to checkpoint the WAL
           // PRAGMA wal_checkpoint(TRUNCATE) forces a checkpoint and truncates the WAL
           try {
             execSync(`sqlite3 "${this.sourcePath}" "PRAGMA wal_checkpoint(TRUNCATE);"`, {
               stdio: 'pipe'
             });
-            console.log('   WAL checkpoint completed');
           } catch (sqliteError) {
-            console.warn('   Could not checkpoint WAL using sqlite3, proceeding with direct copy');
-            // Continue anyway - the backup will still work, just might not have latest WAL changes
+            // Silently continue - backup will still work
           }
         }
       }
     } catch (error) {
-      console.warn('WAL checkpoint warning:', error);
       // Continue with backup even if checkpoint fails
     }
   }

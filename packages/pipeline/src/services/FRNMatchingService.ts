@@ -13,6 +13,7 @@ import * as Database from 'better-sqlite3';
 import { EventEmitter } from 'events';
 import { DatabaseValidator } from '@cash-mgmt/shared';
 import { EnhancedLogger } from '@cash-mgmt/shared';
+import { logger } from '../utils/PipelineLogger';
 import { FRNMatchingConfig, FRNConfigurationError } from '../types/FRNMatchingConfig';
 
 // Pipeline-aligned types (import from actual pipeline types when available)
@@ -149,12 +150,11 @@ export class FRNMatchingService extends EventEmitter {
    */
   async loadConfiguration(): Promise<void> {
     try {
-      this.logger.info('Loading FRN matching configuration from database...');
-
       const stmt = this.db.prepare(`
         SELECT config_key, config_value, config_type
         FROM unified_config
         WHERE category = 'frn_matching' AND is_active = 1
+          AND config_key != 'frn_lookup_cache_version'
       `);
 
       const rows = stmt.all() as Array<{
@@ -181,12 +181,12 @@ export class FRNMatchingService extends EventEmitter {
 
       // Rebuild lookup helper cache if normalization config changed
       if (this.hasNormalizationConfigChanged()) {
-        this.logger.info('Normalization configuration changed, rebuilding lookup helper cache...');
+        this.logger.info('   Normalization config changed, rebuilding FRN lookup cache...');
         await this.rebuildLookupHelperCache();
+      } else {
+        this.logger.info('   ✅ FRN lookup cache up to date');
       }
 
-      this.logger.info(`Loaded ${rows.length} FRN configuration parameters`);
-      this.logger.debug('Configuration loaded');
 
     } catch (error) {
       this.logger.error('Failed to load FRN configuration from database');
@@ -885,7 +885,16 @@ export class FRNMatchingService extends EventEmitter {
       return false;
     }
 
-    // Check if queue size limit would be exceeded
+    // Don't add if already in research queue (check FIRST to avoid duplicate warnings)
+    const existing = this.db.prepare(
+      'SELECT COUNT(*) as count FROM frn_research_queue WHERE bank_name = ?'
+    ).get(normalizedBankName) as any;
+
+    if ((existing?.count || 0) > 0) {
+      return false;  // Already in queue - silently skip
+    }
+
+    // Check if queue size limit would be exceeded (check LAST after duplicate check)
     const currentQueueSize = this.db.prepare(
       'SELECT COUNT(*) as count FROM frn_research_queue'
     ).get() as any;
@@ -895,12 +904,7 @@ export class FRNMatchingService extends EventEmitter {
       return false;
     }
 
-    // Don't add if already in research queue
-    const existing = this.db.prepare(
-      'SELECT COUNT(*) as count FROM frn_research_queue WHERE bank_name = ?'
-    ).get(normalizedBankName) as any;
-
-    return (existing?.count || 0) === 0;
+    return true;
   }
 
   /**
@@ -996,7 +1000,7 @@ export class FRNMatchingService extends EventEmitter {
           updatedCount++;
         }
       } catch (error) {
-        console.warn(`Failed to update raw table for ${product.bankName} on ${product.platform}: ${error}`);
+        logger.warn(`Failed to update raw table for ${product.bankName} on ${product.platform}: ${error}`);
       }
     }
 
@@ -1089,7 +1093,6 @@ export class FRNMatchingService extends EventEmitter {
    */
   async rebuildLookupHelperCache(): Promise<void> {
     const startTime = Date.now();
-    this.logger.info('Rebuilding FRN lookup helper cache...');
 
     try {
       // Clear existing cache
@@ -1109,7 +1112,7 @@ export class FRNMatchingService extends EventEmitter {
       const count = this.db.prepare('SELECT COUNT(*) as count FROM frn_lookup_helper_cache').get() as { count: number };
       const elapsed = Date.now() - startTime;
 
-      this.logger.info(`✅ Rebuilt lookup cache: ${count.count} entries in ${elapsed}ms`);
+      this.logger.info(`   ✅ FRN lookup cache rebuilt: ${count.count} entries (${elapsed}ms)`);
     } catch (error) {
       this.logger.error(`Failed to rebuild lookup helper cache: ${error}`);
       throw error;

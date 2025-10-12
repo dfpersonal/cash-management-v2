@@ -1,4 +1,5 @@
 import * as Database from 'better-sqlite3';
+import { logger } from '../utils/PipelineLogger';
 import {
   RulesBasedModule,
   ConfigCategory,
@@ -179,7 +180,7 @@ export class DataQualityAnalyzer {
     }
 
     if (this.config.verbose) {
-      console.log('✅ Data quality configuration loaded from unified_config');
+      logger.info(`✅ Loaded ${configRows.length} data quality configuration parameters`);
     }
   }
 
@@ -211,7 +212,7 @@ export class DataQualityAnalyzer {
     const analysisStart = Date.now();
 
     if (this.config.verbose) {
-      console.log(`📊 Starting data quality analysis for batch ${this.batchId}`);
+      logger.info(`📊 Starting data quality analysis for batch ${this.batchId}`);
     }
 
     try {
@@ -266,14 +267,14 @@ export class DataQualityAnalyzer {
       if (this.config.verbose) {
         this.outputDetailedReport(report);
       } else {
-        console.log(`✅ Data quality score: ${report.overallScore}% (${report.anomalies.length} anomalies)`);
+        logger.info(`✅ Data quality score: ${report.overallScore}% (${report.anomalies.length} anomalies)`);
       }
 
       return report;
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`❌ Data quality analysis failed: ${errorMsg}`);
+      logger.error(`❌ Data quality analysis failed: ${errorMsg}`);
       throw error;
     }
   }
@@ -470,7 +471,7 @@ export class DataQualityAnalyzer {
         FROM deduplication_groups
       `).get() as any;
     } catch (error) {
-      console.warn('Failed to query deduplication_groups table:', error);
+      logger.warn('Failed to query deduplication_groups table:', error);
       // Fallback to available_products table
       try {
         businessKeyStats = this.db.prepare(`
@@ -481,7 +482,7 @@ export class DataQualityAnalyzer {
           WHERE business_key IS NOT NULL
         `).get() as any;
       } catch (fallbackError) {
-        console.warn('Failed to query available_products for business keys:', fallbackError);
+        logger.warn('Failed to query available_products for business keys:', fallbackError);
       }
     }
 
@@ -495,7 +496,7 @@ export class DataQualityAnalyzer {
       `).get() as any;
       crossPlatformGroups = crossPlatformResult?.count || 0;
     } catch (error) {
-      console.warn('Failed to query cross-platform groups:', error);
+      logger.warn('Failed to query cross-platform groups:', error);
     }
 
     // Get selection reason distribution (if available_products table exists)
@@ -822,10 +823,10 @@ export class DataQualityAnalyzer {
       );
 
       if (this.config.verbose) {
-        console.log(`💾 Data quality report stored for batch ${report.batchId}`);
+        logger.debug(`💾 Data quality report stored for batch ${report.batchId}`);
       }
     } catch (error) {
-      console.error('Failed to store data quality report:', error);
+      logger.error('Failed to store data quality report:', error);
       // Don't throw - report storage failure shouldn't break pipeline
     }
   }
@@ -834,58 +835,58 @@ export class DataQualityAnalyzer {
    * Output detailed console report
    */
   private outputDetailedReport(report: DataQualityReport): void {
-    console.log('\n=== DATA QUALITY ANALYSIS REPORT ===');
-    console.log(`Batch ID: ${report.batchId}`);
-    console.log(`Overall Quality Score: ${report.overallScore}/100`);
+    logger.info('\n=== DATA QUALITY ANALYSIS REPORT ===');
+    logger.info(`Batch ID: ${report.batchId}`);
+    logger.info(`Overall Quality Score: ${report.overallScore}/100`);
 
-    console.log('\nPIPELINE FLOW:');
-    console.log('┌─────────────┬─────────┬──────────┐');
-    console.log('│ Stage       │ Count   │ Change   │');
-    console.log('├─────────────┼─────────┼──────────┤');
-    console.log(`│ Raw Input   │ ${report.pipeline.rawProductCount.toLocaleString().padStart(7)} │ -        │`);
-    console.log(`│ Final       │ ${report.pipeline.finalCount.toLocaleString().padStart(7)} │ ${this.formatChange(report.pipeline.finalCount - report.pipeline.rawProductCount, report.pipeline.rawProductCount).padStart(8)} │`);
-    console.log('└─────────────┴─────────┴──────────┘');
+    logger.info('\nPIPELINE FLOW:');
+    logger.info('┌─────────────┬─────────┬──────────┐');
+    logger.info('│ Stage       │ Count   │ Change   │');
+    logger.info('├─────────────┼─────────┼──────────┤');
+    logger.info(`│ Raw Input   │ ${report.pipeline.rawProductCount.toLocaleString().padStart(7)} │ -        │`);
+    logger.info(`│ Final       │ ${report.pipeline.finalCount.toLocaleString().padStart(7)} │ ${this.formatChange(report.pipeline.finalCount - report.pipeline.rawProductCount, report.pipeline.rawProductCount).padStart(8)} │`);
+    logger.info('└─────────────┴─────────┴──────────┘');
 
-    console.log(`\nDATA INTEGRITY: Score ${report.integrityScore}/100`);
+    logger.info(`\nDATA INTEGRITY: Score ${report.integrityScore}/100`);
     if (report.dataIntegrity.missingFields.length === 0) {
-      console.log('✓ All required fields present');
+      logger.info('✓ All required fields present');
     } else {
-      console.log(`⚠ Missing fields: ${report.dataIntegrity.missingFields.join(', ')}`);
+      logger.info(`⚠ Missing fields: ${report.dataIntegrity.missingFields.join(', ')}`);
     }
-    console.log(`${report.dataIntegrity.frnMatchRate >= 0.8 ? '✓' : '⚠'} FRN match rate: ${(report.dataIntegrity.frnMatchRate * 100).toFixed(1)}%`);
+    logger.info(`${report.dataIntegrity.frnMatchRate >= 0.8 ? '✓' : '⚠'} FRN match rate: ${(report.dataIntegrity.frnMatchRate * 100).toFixed(1)}%`);
 
-    console.log('\nDEDUPLICATION ANALYSIS:');
-    console.log(`- Business key groups: ${report.deduplication.totalGroups}`);
-    console.log(`- Cross-platform: ${report.deduplication.crossPlatformGroups} groups`);
-    console.log(`- Preferred platform retention: ${report.deduplication.preferredPlatformRetention.toFixed(1)}%`);
+    logger.info('\nDEDUPLICATION ANALYSIS:');
+    logger.info(`- Business key groups: ${report.deduplication.totalGroups}`);
+    logger.info(`- Cross-platform: ${report.deduplication.crossPlatformGroups} groups`);
+    logger.info(`- Preferred platform retention: ${report.deduplication.preferredPlatformRetention.toFixed(1)}%`);
 
     if (Object.keys(report.deduplication.selectionReasons).length > 0) {
-      console.log('- Selection distribution:');
+      logger.info('- Selection distribution:');
       Object.entries(report.deduplication.selectionReasons).forEach(([reason, count]) => {
         const percentage = (count / report.pipeline.finalCount * 100).toFixed(1);
-        console.log(`  * ${reason}: ${percentage}%`);
+        logger.info(`  * ${reason}: ${percentage}%`);
       });
     }
 
-    console.log(`\nANOMALIES DETECTED: ${report.anomalies.length}`);
+    logger.info(`\nANOMALIES DETECTED: ${report.anomalies.length}`);
     if (report.anomalies.length === 0) {
-      console.log('✓ No anomalies detected');
+      logger.info('✓ No anomalies detected');
     } else {
       report.anomalies.forEach(anomaly => {
         const icon = anomaly.severity === 'high' ? '🔴' : anomaly.severity === 'medium' ? '⚠' : 'ℹ';
-        console.log(`${icon} [${anomaly.severity.toUpperCase()}] ${anomaly.description}`);
+        logger.info(`${icon} [${anomaly.severity.toUpperCase()}] ${anomaly.description}`);
       });
     }
 
     if (report.recommendations.length > 0) {
-      console.log('\nRECOMMENDATIONS:');
+      logger.info('\nRECOMMENDATIONS:');
       report.recommendations.forEach((rec, i) => {
-        console.log(`${i + 1}. ${rec}`);
+        logger.info(`${i + 1}. ${rec}`);
       });
     }
 
-    console.log(`\nExecution time: ${report.executionTimeMs}ms`);
-    console.log('=' .repeat(50));
+    logger.info(`\nExecution time: ${report.executionTimeMs}ms`);
+    logger.info('=' .repeat(50));
   }
 
   private formatChange(change: number, total: number): string {

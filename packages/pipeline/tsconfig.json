@@ -9,6 +9,6 @@
   "references": [
     { "path": "../shared" }
   ],
-  "include": ["src/services/**/*", "src/types/**/*", "src/index.ts"],
+  "include": ["src/services/**/*", "src/types/**/*", "src/utils/**/*", "src/index.ts"],
   "exclude": ["node_modules", "dist"]
 }

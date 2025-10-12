@@ -15,6 +15,7 @@ import { FRNMatchingService, FRNMatchingServiceResult } from './FRNMatchingServi
 import { DeduplicationService, DeduplicationOutput, FinalProduct } from './DeduplicationService';
 import { PipelineAudit } from './PipelineAudit';
 import { DataQualityAnalyzer, DataQualityReport } from './DataQualityAnalyzer';
+import { logger } from '../utils/PipelineLogger';
 
 export interface OrchestrationConfig {
   // Core pipeline control (simplified - no retry logic)
@@ -354,7 +355,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       await this.deduplicationService.loadConfiguration();
 
       this.initialized = true;
-      console.log('✅ OrchestrationService initialized successfully');
+      logger.info('   ✅ Pipeline orchestrator initialized');
     } catch (error) {
       await this.handleCriticalError(
         OrchestratorCriticalErrorType.SERVICE_INIT_FAILED,
@@ -453,10 +454,10 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
 
       // Execute pipeline in atomic transaction if enabled
       if (this.config?.pipelineAtomicMode) {
-        console.log('🔒 Pipeline executing in atomic mode - data will be committed only on success');
+        logger.info('🔒 Pipeline executing in atomic mode - data will be committed only on success');
         return await this.executeAtomicPipeline(inputFiles, batchId, auditBatchId, result, startTime, options);
       } else {
-        console.log('🔓 Pipeline executing in incremental mode - data committed after each stage');
+        logger.info('🔓 Pipeline executing in incremental mode - data committed after each stage');
         return await this.executeIncrementalPipeline(inputFiles, batchId, auditBatchId, result, startTime, options);
       }
     } catch (error) {
@@ -477,7 +478,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
   ): Promise<PipelineResult> {
     // Check if stopAfterStage is incompatible with atomic mode
     if (options?.stopAfterStage) {
-      console.log('⚠️ stopAfterStage specified - switching to incremental mode');
+      logger.info('⚠️ stopAfterStage specified - switching to incremental mode');
       return await this.executeIncrementalPipeline(inputFiles, batchId, auditBatchId, result, startTime, options);
     }
 
@@ -490,16 +491,16 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       // Only commit if pipeline was successful
       if (pipelineResult.success) {
         this.db.exec('COMMIT');
-        console.log('✅ Atomic transaction committed - all data persisted');
+        logger.info('✅ Atomic transaction committed - all data persisted');
       } else {
         this.db.exec('ROLLBACK');
-        console.log('❌ Atomic transaction rolled back - no data persisted');
+        logger.warn('❌ Atomic transaction rolled back - no data persisted');
       }
 
       return pipelineResult;
     } catch (error) {
       this.db.exec('ROLLBACK');
-      console.log('❌ Atomic transaction rolled back due to error - no data persisted');
+      logger.error('❌ Atomic transaction rolled back due to error - no data persisted');
       throw error;
     }
   }
@@ -567,7 +568,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
 
         // Check if we should stop after JSON ingestion
         if (options?.stopAfterStage === PipelineStage.JSON_INGESTION) {
-          console.log('⏹️ Stopping pipeline after JSON Ingestion as requested');
+          logger.info('⏹️ Stopping pipeline after JSON Ingestion as requested');
           result.success = true;
           const rawCount = this.db.prepare('SELECT COUNT(*) as count FROM available_products_raw').get() as { count: number };
           result.finalProductCount = rawCount.count;
@@ -618,9 +619,9 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
         const qualityReport = await dataQualityAnalyzer.analyzePipeline();
 
         if (this.config.dataQualityVerbose) {
-          console.log('📊 Data quality analysis completed');
+          logger.info('📊 Data quality analysis completed');
         } else {
-          console.log(`✅ Data quality score: ${qualityReport.overallScore}%`);
+          logger.info(`✅ Data quality score: ${qualityReport.overallScore}%`);
         }
 
         result.dataQualityReport = qualityReport;
@@ -698,7 +699,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
     }
 
     // Flush all batched audit records to database
-    console.log('🔍 Orchestrator: Flushing pipeline audit records');
+    logger.debug('🔍 Orchestrator: Flushing pipeline audit records');
     this.pipelineAudit.flush();
 
     return result;
@@ -782,7 +783,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
    */
   private async executeFRNMatchingStage(products: ParsedProduct[]): Promise<FRNMatchingServiceResult> {
     try {
-      console.log(`🔍 Starting FRN matching for ${products.length} products`);
+      logger.info(`🔍 Starting FRN matching for ${products.length} products`);
 
       const frnResult = await this.frnMatchingService.processProducts(products);
 
@@ -790,7 +791,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
         throw new Error(`FRN Matching failed: ${frnResult.errors.join(', ')}`);
       }
 
-      console.log(`✅ FRN matching completed: ${frnResult.stats.exactMatches} exact, ${frnResult.stats.fuzzyMatches} fuzzy, ${frnResult.stats.aliasMatches} alias, ${frnResult.stats.noMatches} no match`);
+      logger.info(`✅ FRN matching completed: ${frnResult.stats.exactMatches} exact, ${frnResult.stats.fuzzyMatches} fuzzy, ${frnResult.stats.aliasMatches} alias, ${frnResult.stats.noMatches} no match`);
 
       return frnResult;
     } catch (error) {
@@ -809,14 +810,14 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
    */
   private async executeDeduplicationStage(products: import('./FRNMatchingService').EnrichedProduct[]): Promise<DeduplicationOutput> {
     try {
-      console.log(`🔍 executeDeduplicationStage calling processProducts with ${products.length} products`);
+      logger.debug(`🔍 executeDeduplicationStage calling processProducts with ${products.length} products`);
       const deduplicationResult = await this.deduplicationService.processProducts(products);
 
-      console.log(`🔍 executeDeduplicationStage received from service: selectedProducts.length=${deduplicationResult.selectedProducts?.length}`);
+      logger.debug(`🔍 executeDeduplicationStage received from service: selectedProducts.length=${deduplicationResult.selectedProducts?.length}`);
 
       return deduplicationResult;
     } catch (error) {
-      console.log(`❌ executeDeduplicationStage caught error: ${error}`);
+      logger.error(`❌ executeDeduplicationStage caught error: ${error}`);
       throw error;
     }
   }
@@ -825,13 +826,13 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
    * Non-atomic persistence with complete data replacement
    */
   private async persistResultsNonAtomic(selectedProducts: FinalProduct[]): Promise<void> {
-    console.log(`💾 Starting non-atomic persistence of ${selectedProducts.length} products`);
+    logger.debug(`💾 Starting non-atomic persistence of ${selectedProducts.length} products`);
 
     try {
       // Clear existing products
       const deleteStmt = this.db.prepare(`DELETE FROM available_products`);
       deleteStmt.run();
-      console.log(`🗑️ Cleared existing products from available_products`);
+      logger.debug(`🗑️ Cleared existing products from available_products`);
 
       // Insert new products
       if (selectedProducts.length > 0) {
@@ -868,10 +869,10 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
             product.platform // raw_platform same as platform
           ]);
         }
-        console.log(`✅ Inserted ${selectedProducts.length} products into available_products`);
+        logger.debug(`✅ Inserted ${selectedProducts.length} products into available_products`);
       }
     } catch (error) {
-      console.error('❌ Non-atomic persistence failed:', error);
+      logger.error('❌ Non-atomic persistence failed:', error);
       throw error;
     }
   }
@@ -882,17 +883,17 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
    */
   private async persistResultsWithTransaction(selectedProducts: FinalProduct[]): Promise<void> {
     if (!this.config?.enableAtomicTransactions) {
-      console.log('⚠️ Atomic transactions disabled, skipping persistence');
+      logger.warn('⚠️ Atomic transactions disabled, skipping persistence');
       return;
     }
 
-    console.log(`💾 Starting atomic persistence of ${selectedProducts.length} products`);
+    logger.debug(`💾 Starting atomic persistence of ${selectedProducts.length} products`);
 
     const transaction = this.db.transaction(() => {
       try {
         // 1. Validate current data state
         const currentCount = this.db.prepare(`SELECT COUNT(*) as count FROM available_products`).get() as { count: number };
-        console.log(`Replacing ${currentCount.count} existing products with ${selectedProducts.length} new products`);
+        logger.debug(`Replacing ${currentCount.count} existing products with ${selectedProducts.length} new products`);
 
         // 2. Clear current data
         this.db.prepare(`DELETE FROM available_products`).run();
@@ -936,10 +937,10 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
           throw new Error(`Data integrity error: expected ${selectedProducts.length}, got ${finalCount.count}`);
         }
 
-        console.log(`Successfully replaced ${currentCount.count} products with ${insertedCount} new products`);
+        logger.debug(`Successfully replaced ${currentCount.count} products with ${insertedCount} new products`);
 
       } catch (error) {
-        console.error('Transaction failed, rolling back:', error);
+        logger.error('Transaction failed, rolling back:', error);
         throw error; // This will cause transaction rollback
       }
     });
@@ -947,7 +948,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
     try {
       // Execute transaction (atomic - all or nothing)
       transaction();
-      console.log('✅ Atomic persistence completed successfully');
+      logger.info('✅ Atomic persistence completed successfully');
     } catch (error) {
       await this.handleCriticalError(
         OrchestratorCriticalErrorType.PERSISTENCE_FAILED,
@@ -989,7 +990,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       const row = stmt.get() as { is_running: number } | undefined;
       return row?.is_running === 1;
     } catch (error) {
-      console.error('Failed to check pipeline status:', error);
+      logger.error('Failed to check pipeline status:', error);
       return false; // Safe fallback
     }
   }
@@ -1008,7 +1009,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       `);
       stmt.run(isRunning ? 1 : 0, stage || null, batchId || null, isRunning ? 1 : 0);
     } catch (error) {
-      console.error('Failed to update pipeline status:', error);
+      logger.error('Failed to update pipeline status:', error);
       throw new Error(`Failed to update pipeline status: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -1039,7 +1040,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
         batchId: row?.batch_id || undefined
       };
     } catch (error) {
-      console.error('Failed to get pipeline status:', error);
+      logger.error('Failed to get pipeline status:', error);
       return { isRunning: false };
     }
   }
@@ -1068,12 +1069,12 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
 
         // Check for stuck pipeline (running too long)
         if (timeSinceStart > timeoutMs * 3) { // 15 minutes total timeout
-          console.warn(`Detected stuck pipeline execution, resetting state`);
+          logger.warn(`Detected stuck pipeline execution, resetting state`);
           await this.resetPipelineStatus();
         }
       }
     } catch (error) {
-      console.error('Pipeline state validation failed:', error);
+      logger.error('Pipeline state validation failed:', error);
       await this.resetPipelineStatus(); // Safe recovery
     }
   }
@@ -1090,7 +1091,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       `);
       stmt.run();
     } catch (error) {
-      console.error('Failed to reset pipeline status:', error);
+      logger.error('Failed to reset pipeline status:', error);
     }
   }
 
@@ -1125,7 +1126,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
     }
 
     // Log for debugging
-    console.error(`Pipeline failed: ${errorType} in ${stage} - ${message}`, originalError);
+    logger.error(`Pipeline failed: ${errorType} in ${stage} - ${message}`, originalError);
   }
 
   /**
@@ -1134,11 +1135,11 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
   private handlePipelineError(error: unknown, result: PipelineResult, batchId: string, startTime: number): PipelineResult {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    console.error(`❌ Pipeline execution failed for batch ${batchId}: ${errorMessage}`);
+    logger.error(`❌ Pipeline execution failed for batch ${batchId}: ${errorMessage}`);
 
     // Reset pipeline status
     this.resetPipelineStatus().catch(resetError => {
-      console.error('Failed to reset pipeline status after error:', resetError);
+      logger.error('Failed to reset pipeline status after error:', resetError);
     });
 
     // Return failed result
@@ -1286,7 +1287,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
    * This enables true cross-scraper deduplication
    */
   public async rebuildFromRawData(options?: PipelineOptions): Promise<void> {
-    console.log('🔄 Rebuilding available_products from complete raw dataset...');
+    logger.info('🔄 Rebuilding available_products from complete raw dataset...');
 
     try {
       // 1. Load ALL products from available_products_raw (including FRN data)
@@ -1299,10 +1300,10 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
         ORDER BY source, bank_name, account_type
       `).all() as any[];
 
-      console.log(`📊 Loading ${rawProducts.length} products from raw table for reprocessing`);
+      logger.info(`📊 Loading ${rawProducts.length} products from raw table for reprocessing`);
 
       if (rawProducts.length === 0) {
-        console.log('⚠️ No products in raw table, skipping rebuild');
+        logger.warn('⚠️ No products in raw table, skipping rebuild');
         return;
       }
 
@@ -1328,23 +1329,23 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       }));
 
       // 3. Process through FRN matching
-      console.log('🔍 Processing complete dataset through FRN matching...');
+      logger.info('🔍 Processing complete dataset through FRN matching...');
       const frnResult = await this.executeFRNMatchingStage(parsedProducts);
 
       // Early exit after FRN matching if requested
       if (options?.stopAfterStage === PipelineStage.FRN_MATCHING) {
-        console.log('⏹️ Stopping pipeline after FRN Matching as requested');
-        console.log(`✅ FRN matching completed: ${frnResult.enrichedProducts.length} products enriched`);
+        logger.info('⏹️ Stopping pipeline after FRN Matching as requested');
+        logger.info(`✅ FRN matching completed: ${frnResult.enrichedProducts.length} products enriched`);
         return;
       }
 
       // 4. Process through deduplication
-      console.log('🔄 Processing complete dataset through deduplication...');
+      logger.info('🔄 Processing complete dataset through deduplication...');
       const deduplicationResult = await this.executeDeduplicationStage(frnResult.enrichedProducts);
 
       // Early exit after deduplication if requested
       if (options?.stopAfterStage === PipelineStage.DEDUPLICATION) {
-        console.log('⏹️ Stopping pipeline after Deduplication as requested');
+        logger.info('⏹️ Stopping pipeline after Deduplication as requested');
         // Persist the deduplicated results and exit before data quality analysis
         if (deduplicationResult.selectedProducts && deduplicationResult.selectedProducts.length > 0) {
           if (this.config?.enableAtomicTransactions) {
@@ -1352,27 +1353,27 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
           } else {
             await this.persistResultsNonAtomic(deduplicationResult.selectedProducts);
           }
-          console.log(`✅ Pipeline stopped after deduplication: ${deduplicationResult.selectedProducts.length} products persisted`);
+          logger.info(`✅ Pipeline stopped after deduplication: ${deduplicationResult.selectedProducts.length} products persisted`);
         } else {
-          console.log('⚠️ No products to persist after deduplication');
+          logger.warn('⚠️ No products to persist after deduplication');
         }
         return;
       }
 
       if (!deduplicationResult.selectedProducts || deduplicationResult.selectedProducts.length === 0) {
-        console.log('⚠️ No products selected from complete dataset - this is expected when raw table is empty');
+        logger.warn('⚠️ No products selected from complete dataset - this is expected when raw table is empty');
         // Clear the final table since there are no products to process
         if (this.config?.enableAtomicTransactions) {
           await this.persistResultsWithTransaction([]);
         } else {
           await this.persistResultsNonAtomic([]);
         }
-        console.log('✅ Rebuild complete: empty dataset handled gracefully');
+        logger.info('✅ Rebuild complete: empty dataset handled gracefully');
         return;
       }
 
       // 5. Replace available_products table (using existing persistence logic)
-      console.log(`💾 Replacing available_products with ${deduplicationResult.selectedProducts.length} deduplicated products`);
+      logger.info(`💾 Replacing available_products with ${deduplicationResult.selectedProducts.length} deduplicated products`);
 
       if (this.config?.enableAtomicTransactions) {
         await this.persistResultsWithTransaction(deduplicationResult.selectedProducts);
@@ -1380,10 +1381,10 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
         await this.persistResultsNonAtomic(deduplicationResult.selectedProducts);
       }
 
-      console.log(`✅ Rebuild complete: ${rawProducts.length} raw → ${deduplicationResult.selectedProducts.length} final products`);
+      logger.info(`✅ Rebuild complete: ${rawProducts.length} raw → ${deduplicationResult.selectedProducts.length} final products`);
 
     } catch (error) {
-      console.error('❌ Rebuild from raw data failed:', error);
+      logger.error('❌ Rebuild from raw data failed:', error);
       throw error;
     }
   }
@@ -1393,7 +1394,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
    * Uses graceful failure - warnings only if files are missing or can't be deleted
    */
   private async cleanupProcessedFiles(inputFiles: string[]): Promise<void> {
-    console.log('🧹 Cleaning up processed files...');
+    logger.info('🧹 Cleaning up processed files...');
 
     try {
       const fs = await import('fs/promises');
@@ -1407,7 +1408,7 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
           const match = filename.match(/^([a-z]+)-normalized-(.+)\.json$/);
 
           if (!match) {
-            console.warn(`⚠️  Skipping cleanup for non-standard filename: ${filename}`);
+            logger.warn(`⚠️  Skipping cleanup for non-standard filename: ${filename}`);
             continue;
           }
 
@@ -1424,27 +1425,27 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
             const fullPath = path.join(directory, file);
             try {
               await fs.unlink(fullPath);
-              console.log(`  ✓ Deleted: ${file}`);
+              logger.debug(`  ✓ Deleted: ${file}`);
             } catch (unlinkError: any) {
               if (unlinkError.code === 'ENOENT') {
-                console.warn(`  ⚠️  File already deleted: ${file}`);
+                logger.warn(`  ⚠️  File already deleted: ${file}`);
               } else {
-                console.warn(`  ⚠️  Failed to delete ${file}: ${unlinkError.message}`);
+                logger.warn(`  ⚠️  Failed to delete ${file}: ${unlinkError.message}`);
               }
             }
           }
 
           if (relatedFiles.length > 0) {
-            console.log(`✅ Cleaned up ${relatedFiles.length} file(s) for ${platform} (${timestamp})`);
+            logger.info(`✅ Cleaned up ${relatedFiles.length} file(s) for ${platform} (${timestamp})`);
           }
         } catch (fileError: any) {
-          console.warn(`⚠️  Cleanup failed for ${path.basename(filePath)}: ${fileError.message}`);
+          logger.warn(`⚠️  Cleanup failed for ${path.basename(filePath)}: ${fileError.message}`);
         }
       }
 
-      console.log('✅ File cleanup complete');
+      logger.info('✅ File cleanup complete');
     } catch (error: any) {
-      console.warn(`⚠️  File cleanup encountered an error: ${error.message}`);
+      logger.warn(`⚠️  File cleanup encountered an error: ${error.message}`);
       // Don't throw - cleanup failure shouldn't fail the pipeline
     }
   }

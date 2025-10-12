@@ -93,15 +93,12 @@ export class PipelineAudit {
 
     // Only set database if auditing is enabled and we want database output
     if (this.config.enabled) {
-      console.log(`🔍 PipelineAudit enabled: outputFormat=${this.config.outputFormat}, level=${this.config.level}`);
-
       if (this.config.outputFormat === 'database') {
         if (database) {
           this.db = database;
           this.ensureAuditTables();
-          console.log(`✅ PipelineAudit database connection established`);
         } else {
-          console.log(`⚠️  PipelineAudit: Database output requested but no database provided - falling back to console`);
+          console.warn(`⚠️  PipelineAudit: Database output requested but no database provided - falling back to console`);
           this.config.outputFormat = 'console';
         }
       }
@@ -113,7 +110,6 @@ export class PipelineAudit {
    * Record a pipeline stage result
    */
   record(stage: string, result: ServiceResult<any>, processingTime?: number): void {
-    console.log(`🔍 PipelineAudit.record called: stage=${stage}, enabled=${this.config.enabled}, db=${!!this.db}`);
     if (!this.config.enabled) return; // No-op in production or when disabled
 
     const record: PipelineAuditRecord = {
@@ -199,7 +195,6 @@ export class PipelineAudit {
 
       batchStmt.run(this.batchId, this.pipelineId, JSON.stringify(metadata));
       this.batchCreated = true;
-      console.log(`🔍 PipelineAudit: Created master batch record for ${this.batchId}`);
     } catch (error) {
       console.error('PipelineAudit: Failed to create batch record:', error);
       throw error;
@@ -220,7 +215,6 @@ export class PipelineAudit {
       `);
 
       stmt.run(status, errorMessage || null, this.batchId);
-      console.log(`🔍 PipelineAudit: Completed batch ${this.batchId} with status: ${status}`);
     } catch (error) {
       console.error('PipelineAudit: Failed to complete batch:', error);
       throw error;
@@ -232,11 +226,8 @@ export class PipelineAudit {
    */
   flush(): void {
     if (!this.config.enabled || !this.db || this.auditBatch.length === 0) {
-      console.log(`🔍 PipelineAudit: Flush skipped - enabled=${this.config.enabled}, db=${!!this.db}, records=${this.auditBatch.length}`);
       return;
     }
-
-    console.log(`🔍 PipelineAudit: Flushing ${this.auditBatch.length} audit records to database`);
 
     try {
       this.db.transaction(() => {
@@ -269,7 +260,6 @@ export class PipelineAudit {
         }
       })();
 
-      console.log(`✅ PipelineAudit: Successfully flushed ${this.auditBatch.length} records`);
       this.auditBatch = []; // Clear the batch
     } catch (error) {
       console.error('❌ PipelineAudit: Failed to flush audit records:', error);
@@ -306,8 +296,6 @@ export class PipelineAudit {
 
       this.persistAuditRecord(record);
     });
-
-    console.log(`🔍 PipelineAudit: initialized master batch and ${stages.length} stage entries`);
   }
 
   /**
@@ -317,7 +305,6 @@ export class PipelineAudit {
     if (this.config.outputFormat === 'database' && this.db) {
       // Add to batch instead of immediate write
       this.auditBatch.push(record);
-      console.log(`🔍 PipelineAudit: Added ${record.stage} record to batch (${this.auditBatch.length} records queued)`);
     } else if (this.config.outputFormat === 'console') {
       this.logToConsole(record);
     } else if (this.config.outputFormat === 'json') {

@@ -10,6 +10,7 @@ import {
   ModuleStatus,
   ValidationResult
 } from '@cash-mgmt/shared';
+import { logger } from '../utils/PipelineLogger';
 
 // Corruption detection and error handling interfaces
 export enum JSONIngestionCriticalErrorType {
@@ -316,7 +317,7 @@ export class JSONIngestionService {
         entry.processingStageTimesMs || null
       );
     } catch (error) {
-      console.error(`Failed to log ingestion audit for ${entry.productId}: ${error}`);
+      logger.error(`Failed to log ingestion audit for ${entry.productId}: ${error}`);
       // Don't throw - audit failure shouldn't break pipeline
     }
   }
@@ -362,7 +363,7 @@ export class JSONIngestionService {
           try {
             value = JSON.parse(value as string);
           } catch {
-            console.warn(`Failed to parse JSON config: ${key}`);
+            logger.warn(`Failed to parse JSON config: ${key}`);
           }
         }
 
@@ -433,7 +434,7 @@ export class JSONIngestionService {
       }
 
       this.config = config as JSONIngestionConfig;
-      console.log('✅ JSONIngestionService configuration loaded from unified_config');
+      logger.info(`✅ Loaded ${configRows.length} JSON ingestion configuration parameters`);
       return this.config;
     } catch (error) {
       throw new Error(`Failed to load configuration: ${error instanceof Error ? error.message : String(error)}`);
@@ -487,7 +488,7 @@ export class JSONIngestionService {
         updatedAt: ''  // Will be populated if needed
       }));
 
-      console.log(`✅ Loaded ${this.rules.length} business rules for ${category}`);
+      logger.info(`✅ Loaded ${this.rules.length} business rules for ${category}`);
       return this.rules;
     } catch (error) {
       throw new Error(`Failed to load business rules: ${error instanceof Error ? error.message : String(error)}`);
@@ -510,11 +511,11 @@ export class JSONIngestionService {
             priority: rule.priority
           });
         } catch (error) {
-          console.warn(`Failed to parse rule ${rule.ruleName}: ${error instanceof Error ? error.message : String(error)}`);
+          logger.warn(`Failed to parse rule ${rule.ruleName}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
 
-      console.log(`✅ Rules engine initialized with ${rules.length} rules`);
+      logger.info(`✅ Rules engine initialized with ${rules.length} rules`);
     } catch (error) {
       throw new Error(`Failed to initialize rules engine: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -684,7 +685,7 @@ export class JSONIngestionService {
         );
       }
 
-      console.log(`📝 Processing ${input.length} products for validation with corruption detection...`);
+      logger.info(`📝 Processing ${input.length} products for validation with corruption detection...`);
 
       // Normalize platform values for consistency (ensure lowercase)
       // Source is now provided via metadata parameter, not individual products
@@ -706,7 +707,7 @@ export class JSONIngestionService {
 
       const duration = Date.now() - startTime;
 
-      console.log(`✅ JSON Ingestion complete: ${passed.length}/${input.length} products passed validation`);
+      logger.info(`✅ JSON Ingestion complete: ${passed.length}/${input.length} products passed validation`);
 
       // Insert passed products into available_products_raw for audit/debugging purposes
       if (passed.length > 0) {
@@ -1069,7 +1070,7 @@ export class JSONIngestionService {
     this.engine = new Engine();
     this.processedFiles.clear();
     this.initialized = false;
-    console.log('✅ JSONIngestionService reset');
+    logger.info('✅ JSONIngestionService reset');
   }
 
   /**
@@ -1094,9 +1095,9 @@ export class JSONIngestionService {
         this.platformPriorities.set(p.canonical_name.toLowerCase(), p.priority);
       });
 
-      console.log(`✅ Loaded ${platforms.length} platform priorities`);
+      logger.info(`✅ Loaded ${platforms.length} platform priorities`);
     } catch (error) {
-      console.warn(`⚠️ Failed to load platform priorities: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(`⚠️ Failed to load platform priorities: ${error instanceof Error ? error.message : String(error)}`);
       // Use defaults
       this.platformPriorities.set('hargreaves lansdown', 1);
       this.platformPriorities.set('aj bell', 2);
@@ -1126,9 +1127,9 @@ export class JSONIngestionService {
         this.sourceReliability.set(s.scraper_id, s.source_reliability);
       });
 
-      console.log(`✅ Loaded ${scrapers.length} source reliability scores`);
+      logger.info(`✅ Loaded ${scrapers.length} source reliability scores`);
     } catch (error) {
-      console.warn(`⚠️ Failed to load source reliability: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(`⚠️ Failed to load source reliability: ${error instanceof Error ? error.message : String(error)}`);
       // Use defaults
       this.sourceReliability.set('moneyfacts', 0.9);
       this.sourceReliability.set('ajbell', 0.8);
@@ -1148,7 +1149,7 @@ export class JSONIngestionService {
       await this.loadPlatformPriorities();
       await this.loadSourceReliability();
       this.initialized = true;
-      console.log('✅ JSONIngestionService initialized');
+      logger.info('✅ JSONIngestionService initialized');
     } catch (error) {
       throw new Error(`Initialization failed: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -1321,12 +1322,12 @@ export class JSONIngestionService {
     if (products.length > 0) {
       const method = metadata.method;
       const source = metadata.source;
-      console.log(`🗑️ Clearing available_products_raw for method: ${method} (source: ${source}, ${products.length} products)`);
+      logger.debug(`🗑️ Clearing available_products_raw for method: ${method} (source: ${source}, ${products.length} products)`);
       const clearStmt = this.db.prepare(`DELETE FROM available_products_raw WHERE source = ? AND method = ?`);
       const result = clearStmt.run(source, method);
-      console.log(`✅ Cleared ${result.changes} existing products from source: ${source}, method: ${method}`);
+      logger.debug(`✅ Cleared ${result.changes} existing products from source: ${source}, method: ${method}`);
     } else {
-      console.log(`⚠️ No products to process - skipping raw table deletion`);
+      logger.debug(`⚠️ No products to process - skipping raw table deletion`);
     }
 
     const stmt = this.db.prepare(`
@@ -1371,17 +1372,17 @@ export class JSONIngestionService {
         } catch (error) {
           const errorMsg = `Product insert error: ${error instanceof Error ? error.message : String(error)}`;
           errors.push(errorMsg);
-          console.warn(`⚠️ ${errorMsg}`);
+          logger.warn(`⚠️ ${errorMsg}`);
         }
       }
     });
 
     insertMany(products);
 
-    console.log(`💾 Insertion complete: ${inserted}/${products.length} products inserted into raw table`);
+    logger.debug(`💾 Insertion complete: ${inserted}/${products.length} products inserted into raw table`);
     if (errors.length > 0) {
-      console.log(`⚠️ ${errors.length} insertion errors occurred`);
-      errors.forEach((error, i) => console.log(`  ${i + 1}. ${error}`));
+      logger.warn(`⚠️ ${errors.length} insertion errors occurred`);
+      errors.forEach((error, i) => logger.debug(`  ${i + 1}. ${error}`));
     }
 
     return {
@@ -1431,7 +1432,7 @@ export class JSONIngestionService {
    */
   async ingestPendingFiles(): Promise<IngestionResult> {
     const startTime = Date.now();
-    console.log('📥 Starting JSON ingestion...');
+    logger.info('📥 Starting JSON ingestion...');
 
     if (!this.initialized) {
       await this.initialize();
@@ -1441,7 +1442,7 @@ export class JSONIngestionService {
       const normalizedFiles = await this.findNormalizedJSONFiles();
 
       if (normalizedFiles.length === 0) {
-        console.log('✅ No new JSON files to process');
+        logger.info('✅ No new JSON files to process');
         return {
           success: true,
           filesProcessed: 0,
@@ -1462,7 +1463,7 @@ export class JSONIngestionService {
         };
       }
 
-      console.log(`📊 Processing ${normalizedFiles.length} JSON files`);
+      logger.info(`📊 Processing ${normalizedFiles.length} JSON files`);
 
       let totalInserted = 0;
       const errors: string[] = [];
@@ -1477,20 +1478,20 @@ export class JSONIngestionService {
           processedFilesList.push(path.basename(filePath));
           allStatistics.push(result.statistics);
           errors.push(...result.errors);
-          console.log(`✅ Processed ${path.basename(filePath)}: ${result.productsInserted} products`);
+          logger.debug(`✅ Processed ${path.basename(filePath)}: ${result.productsInserted} products`);
         } catch (error) {
           const errorMsg = `${path.basename(filePath)}: ${error instanceof Error ? error.message : String(error)}`;
           errors.push(errorMsg);
-          console.error(`❌ ${errorMsg}`);
+          logger.error(`❌ ${errorMsg}`);
         }
       }
 
       const duration = Date.now() - startTime;
       const success = errors.length === 0;
 
-      console.log(`${success ? '✅' : '⚠️'} JSON ingestion complete: ${totalInserted} products from ${normalizedFiles.length} files in ${duration}ms`);
+      logger.info(`${success ? '✅' : '⚠️'} JSON ingestion complete: ${totalInserted} products from ${normalizedFiles.length} files in ${duration}ms`);
       if (errors.length > 0) {
-        console.log(`⚠️ ${errors.length} files had errors`);
+        logger.warn(`⚠️ ${errors.length} files had errors`);
       }
 
       // Aggregate statistics
@@ -1508,7 +1509,7 @@ export class JSONIngestionService {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`❌ JSON ingestion failed: ${errorMessage}`);
+      logger.error(`❌ JSON ingestion failed: ${errorMessage}`);
       return {
         success: false,
         filesProcessed: 0,
@@ -1599,7 +1600,7 @@ export class JSONIngestionService {
 
       try {
         if (!fs.existsSync(directory)) {
-          console.log(`⚠️ Platform directory not found: ${directory}`);
+          logger.warn(`⚠️ Platform directory not found: ${directory}`);
           continue;
         }
 
@@ -1613,9 +1614,9 @@ export class JSONIngestionService {
           .map(file => path.join(directory, file));
 
         allFiles.push(...normalizedFiles);
-        console.log(`📁 Found ${normalizedFiles.length} normalized files in ${platformDir}`);
+        logger.debug(`📁 Found ${normalizedFiles.length} normalized files in ${platformDir}`);
       } catch (error) {
-        console.error(`❌ Error reading directory ${directory}: ${error instanceof Error ? error.message : String(error)}`);
+        logger.error(`❌ Error reading directory ${directory}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -1659,7 +1660,7 @@ export class JSONIngestionService {
     if (dirName.includes('flagstone')) return 'flagstone';
     if (dirName.includes('hl')) return 'hl';
 
-    console.warn(`⚠️ Could not extract platform from ${filename}, using 'unknown'`);
+    logger.warn(`⚠️ Could not extract platform from ${filename}, using 'unknown'`);
     return 'unknown';
   }
 
@@ -1668,7 +1669,7 @@ export class JSONIngestionService {
    * This method uses rules-based processing for consistency
    */
   async ingestFromMemory(products: ProductData[], platform: string): Promise<IngestionResult> {
-    console.log(`📥 Starting memory-based ingestion for ${platform}...`);
+    logger.info(`📥 Starting memory-based ingestion for ${platform}...`);
 
     // Ensure platform is set for all products
     const normalizedProducts = products.map(product => ({
@@ -1814,9 +1815,9 @@ export class JSONIngestionService {
       const corruptionDeleteStmt = this.db.prepare(`DELETE FROM json_ingestion_corruption_audit WHERE batch_id = ?`);
       corruptionDeleteStmt.run(batchId);
 
-      console.log(`🧹 Cleared JSON ingestion audit trail for batch ${batchId}`);
+      logger.debug(`🧹 Cleared JSON ingestion audit trail for batch ${batchId}`);
     } catch (error) {
-      console.warn(`Failed to clear audit trail: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(`Failed to clear audit trail: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -1843,10 +1844,10 @@ export class JSONIngestionService {
       insertStmt.run(batchId, corruptionType, affectedCount, totalCount, percentage, thresholdExceeded ? 1 : 0, actionTaken);
 
       if (thresholdExceeded) {
-        console.error(`🚨 Systematic corruption detected: ${corruptionType} (${percentage.toFixed(1)}%)`);
+        logger.error(`🚨 Systematic corruption detected: ${corruptionType} (${percentage.toFixed(1)}%)`);
       }
     } catch (error) {
-      console.warn(`Failed to log corruption detection: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(`Failed to log corruption detection: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -1876,7 +1877,7 @@ export class JSONIngestionService {
     originalError?: any
   ): Promise<never> {
     // Log critical error
-    console.error(`🚨 CRITICAL ERROR: ${errorType} - ${message}`);
+    logger.error(`🚨 CRITICAL ERROR: ${errorType} - ${message}`);
 
     // Log to corruption audit if it's a data corruption error
     if (errorType === JSONIngestionCriticalErrorType.DATA_CORRUPTION && this.validationTracker) {
