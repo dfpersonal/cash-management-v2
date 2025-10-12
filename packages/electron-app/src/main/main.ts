@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import Database from 'better-sqlite3';
 import { DatabaseService } from '@cash-mgmt/shared';
-import { OrchestrationService } from '@cash-mgmt/pipeline';
+import { OrchestrationService, FRNMatchingService } from '@cash-mgmt/pipeline';
 import { ScraperProcessManager } from './services/ScraperProcessManager';
 import { BackupService } from './services/BackupService';
 import { DocumentCleanupService } from './services/DocumentCleanupService';
@@ -26,6 +26,7 @@ class CashManagementApp {
   private mainWindow: BrowserWindow | null = null;
   private databaseService: DatabaseService | null = null;
   private orchestrationService: OrchestrationService | null = null;
+  private frnMatchingService: FRNMatchingService | null = null;
   private scraperManager: ScraperProcessManager | null = null;
   private documentCleanupService: DocumentCleanupService | null = null;
 
@@ -182,6 +183,12 @@ class CashManagementApp {
       // OrchestrationService creates its own better-sqlite3 connection
       this.orchestrationService = new OrchestrationService(new Database(databasePath), databasePath);
       await this.orchestrationService.initialize();
+
+      // Initialize FRN Matching Service for runtime cache management
+      console.log('   Initializing FRN Matching Service for cache management...');
+      this.frnMatchingService = new FRNMatchingService(new Database(databasePath));
+      await this.frnMatchingService.loadConfiguration();
+      console.log('   ✅ FRN Matching Service ready');
     } catch (error) {
       console.error('Failed to initialize orchestration service:', error);
       throw error;
@@ -929,7 +936,20 @@ class CashManagementApp {
 
     ipcMain.handle('frn:create-override', async (_, override: any) => {
       try {
-        return await this.databaseService?.createFRNOverride(override);
+        const result = await this.databaseService?.createFRNOverride(override);
+
+        // Rebuild cache after successful creation
+        if (this.frnMatchingService) {
+          try {
+            console.log('[FRN Cache] Rebuilding due to manual override creation...');
+            await this.frnMatchingService.rebuildLookupHelperCache();
+          } catch (cacheError) {
+            // Log but don't throw - cache will be rebuilt on next startup
+            console.error('[FRN Cache] Failed to rebuild cache:', cacheError);
+          }
+        }
+
+        return result;
       } catch (error) {
         console.error('Error creating FRN override:', error);
         throw error;
@@ -938,7 +958,19 @@ class CashManagementApp {
 
     ipcMain.handle('frn:update-override', async (_, id: number, updates: any) => {
       try {
-        return await this.databaseService?.updateFRNOverride(id, updates);
+        const result = await this.databaseService?.updateFRNOverride(id, updates);
+
+        // Rebuild cache after successful update
+        if (this.frnMatchingService) {
+          try {
+            console.log('[FRN Cache] Rebuilding due to manual override update...');
+            await this.frnMatchingService.rebuildLookupHelperCache();
+          } catch (cacheError) {
+            console.error('[FRN Cache] Failed to rebuild cache:', cacheError);
+          }
+        }
+
+        return result;
       } catch (error) {
         console.error('Error updating FRN override:', error);
         throw error;
@@ -947,7 +979,19 @@ class CashManagementApp {
 
     ipcMain.handle('frn:delete-override', async (_, id: number) => {
       try {
-        return await this.databaseService?.deleteFRNOverride(id);
+        const result = await this.databaseService?.deleteFRNOverride(id);
+
+        // Rebuild cache after successful deletion
+        if (this.frnMatchingService) {
+          try {
+            console.log('[FRN Cache] Rebuilding due to manual override deletion...');
+            await this.frnMatchingService.rebuildLookupHelperCache();
+          } catch (cacheError) {
+            console.error('[FRN Cache] Failed to rebuild cache:', cacheError);
+          }
+        }
+
+        return result;
       } catch (error) {
         console.error('Error deleting FRN override:', error);
         throw error;
@@ -965,7 +1009,20 @@ class CashManagementApp {
 
     ipcMain.handle('frn:complete-research', async (_, rowId: number, frn: string, firmName: string, notes?: string) => {
       try {
-        return await this.databaseService?.completeFRNResearch(rowId, frn, firmName, notes);
+        const result = await this.databaseService?.completeFRNResearch(rowId, frn, firmName, notes);
+
+        // Rebuild cache after successful completion (triggers promote_researched_frn trigger)
+        // This trigger automatically inserts into frn_manual_overrides
+        if (this.frnMatchingService) {
+          try {
+            console.log('[FRN Cache] Rebuilding due to research queue completion (auto-override created)...');
+            await this.frnMatchingService.rebuildLookupHelperCache();
+          } catch (cacheError) {
+            console.error('[FRN Cache] Failed to rebuild cache:', cacheError);
+          }
+        }
+
+        return result;
       } catch (error) {
         console.error('Error completing FRN research:', error);
         throw error;
@@ -1218,6 +1275,11 @@ class CashManagementApp {
 
     // Reset orchestration service state
     this.orchestrationService?.reset();
+
+    // Cleanup FRN Matching Service
+    if (this.frnMatchingService) {
+      this.frnMatchingService = null;
+    }
 
     // Close database connections
     this.databaseService?.close();

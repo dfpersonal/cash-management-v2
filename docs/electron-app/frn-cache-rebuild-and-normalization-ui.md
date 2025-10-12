@@ -1,9 +1,10 @@
 # FRN Cache Rebuild Strategy & Normalization UI Implementation
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Date:** 2025-10-12
 **Status:** Phase 1 Complete - Ready for Phase 2
 **Estimated Effort:** 3-5 hours remaining (Phase 1: ✅ Complete)
+**Phase 2 Update:** Four handlers require cache rebuild (not three) - includes `frn:complete-research`
 
 ---
 
@@ -17,9 +18,13 @@ This document outlines a comprehensive solution to address two critical issues i
 
 ### Solution Approach
 
-**Phase 1**: Simplify startup cache rebuild by removing fragile version checking and always rebuilding the cache (50-200ms overhead acceptable for desktop app).
+**Phase 1**: Simplify startup cache rebuild by removing fragile version checking and always rebuilding the cache (50-200ms overhead acceptable for desktop app). ✅ **COMPLETE**
 
-**Phase 2**: Add runtime cache invalidation hooks to IPC handlers so UI changes trigger immediate cache rebuilds.
+**Phase 2**: Add runtime cache invalidation hooks to **four** IPC handlers so UI changes trigger immediate cache rebuilds:
+- `frn:create-override` - Direct manual override creation
+- `frn:update-override` - Direct manual override update
+- `frn:delete-override` - Direct manual override deletion
+- `frn:complete-research` - **NEW** - Triggers `promote_researched_frn` database trigger that auto-inserts into `frn_manual_overrides`
 
 **Phase 3-5**: Build complete UI for managing normalization rules with automatic cache rebuild on save.
 
@@ -489,9 +494,11 @@ if (this.frnMatchingService) {
 
 #### 2B. Add Cache Rebuild to FRN Override Handlers
 
-**File:** `main.ts` (lines 929-954)
+**File:** `main.ts` (lines 929-954 and line 966)
 
-**Update all three handlers:**
+**IMPORTANT:** There are FOUR handlers that need cache rebuild logic, not three. The fourth handler (`frn:complete-research`) triggers the database trigger `promote_researched_frn` which automatically inserts into `frn_manual_overrides`, so it also requires immediate cache rebuild.
+
+**Update all four handlers:**
 
 **1. frn:create-override handler:**
 
@@ -608,9 +615,62 @@ ipcMain.handle('frn:delete-override', async (_, id: number) => {
 });
 ```
 
+**4. frn:complete-research handler:**
+
+**NOTE:** This handler triggers the database trigger `promote_researched_frn`, which automatically inserts a new row into `frn_manual_overrides`. Therefore, cache rebuild must happen here as well.
+
+**Database Trigger Reference:**
+```sql
+CREATE TRIGGER promote_researched_frn
+AFTER UPDATE OF researched_frn ON frn_research_queue
+WHEN NEW.researched_frn IS NOT NULL
+BEGIN
+  INSERT OR REPLACE INTO frn_manual_overrides (scraped_name, frn, firm_name, confidence_score, notes)
+  VALUES (OLD.scraped_name, NEW.researched_frn, NEW.firm_name, 1.0, 'Promoted from research queue');
+END;
+```
+
+REPLACE:
+```typescript
+ipcMain.handle('frn:complete-research', async (_, id: number, data: any) => {
+  try {
+    return await this.databaseService?.completeResearchQueueItem(id, data);
+  } catch (error) {
+    console.error('Error completing FRN research:', error);
+    throw error;
+  }
+});
+```
+
+WITH:
+```typescript
+ipcMain.handle('frn:complete-research', async (_, id: number, data: any) => {
+  try {
+    const result = await this.databaseService?.completeResearchQueueItem(id, data);
+
+    // Rebuild cache after successful completion (triggers promote_researched_frn trigger)
+    // This trigger automatically inserts into frn_manual_overrides
+    if (this.frnMatchingService) {
+      try {
+        console.log('[FRN Cache] Rebuilding due to research queue completion (auto-override created)...');
+        await this.frnMatchingService.rebuildLookupHelperCache();
+      } catch (cacheError) {
+        console.error('[FRN Cache] Failed to rebuild cache:', cacheError);
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error completing FRN research:', error);
+    throw error;
+  }
+});
+```
+
 **Result:**
-- UI changes to FRN overrides trigger immediate cache rebuild
-- Console logging shows cache rebuild activity
+- UI changes to FRN overrides trigger immediate cache rebuild (create/update/delete handlers)
+- Research queue completions trigger immediate cache rebuild (via database trigger)
+- Console logging shows cache rebuild activity for all four handlers
 - Cache errors logged but don't block user operations
 - Cache guaranteed fresh after successful UI operations
 
@@ -1358,9 +1418,11 @@ CHANGE TO:
 - [ ] Update `frn:create-override` handler with cache rebuild
 - [ ] Update `frn:update-override` handler with cache rebuild
 - [ ] Update `frn:delete-override` handler with cache rebuild
+- [ ] Update `frn:complete-research` handler with cache rebuild (triggers DB trigger)
 - [ ] Test: Create FRN override via UI, verify cache rebuilds
 - [ ] Test: Update FRN override via UI, verify cache rebuilds
 - [ ] Test: Delete FRN override via UI, verify cache rebuilds
+- [ ] Test: Complete research queue item, verify cache rebuilds
 
 ### Phase 3: Database Service Methods
 - [ ] Add `getFRNNormalizationConfig()` method to DatabaseService
@@ -1394,6 +1456,7 @@ CHANGE TO:
 - [ ] Full flow: Add suffix via UI → Save → Verify cache rebuilt
 - [ ] Full flow: Add abbreviation via UI → Save → Verify cache rebuilt
 - [ ] Full flow: Create FRN override → Verify cache rebuilt
+- [ ] Full flow: Complete research queue item → Verify cache rebuilt (DB trigger)
 - [ ] Startup test: Restart app → Verify cache rebuilds
 - [ ] Console output: Verify all rebuild messages appear
 - [ ] Performance test: Measure cache rebuild time (should be <200ms)
@@ -1453,6 +1516,12 @@ npm run dev
 1. Add manual override: "UNKNOWN BANK" → FRN 123456
 2. Run pipeline with "UNKNOWN BANK"
 3. Verify it matches FRN 123456 (no restart needed)
+
+**Test Scenario 2b: Research Queue Completion Creates Override**
+1. Complete research queue item with FRN 789012
+2. Verify database trigger created entry in frn_manual_overrides
+3. Run pipeline with same bank name
+4. Verify it matches FRN 789012 (no restart needed)
 
 **Test Scenario 3: Cache Rebuild on Every Startup**
 1. Modify source table directly (e.g., add BOE institution)
