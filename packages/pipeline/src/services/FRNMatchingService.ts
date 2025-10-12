@@ -153,7 +153,6 @@ export class FRNMatchingService extends EventEmitter {
         SELECT config_key, config_value, config_type
         FROM unified_config
         WHERE category = 'frn_matching' AND is_active = 1
-          AND config_key != 'frn_lookup_cache_version'
       `);
 
       const rows = stmt.all() as Array<{
@@ -178,13 +177,10 @@ export class FRNMatchingService extends EventEmitter {
       // Prepare SQL statements after configuration is loaded
       this.prepareStatements();
 
-      // Rebuild lookup helper cache if normalization config changed
-      if (this.hasNormalizationConfigChanged()) {
-        console.log('Normalization config changed, rebuilding FRN lookup cache...');
-        await this.rebuildLookupHelperCache();
-      } else {
-        console.log('✅ FRN lookup cache up to date');
-      }
+      // Always rebuild lookup helper cache at startup for consistency
+      // This ensures cache is always in sync with current configuration
+      // Performance: ~30-50ms is negligible for desktop app startup
+      await this.rebuildLookupHelperCache();
 
 
     } catch (error) {
@@ -1034,61 +1030,10 @@ export class FRNMatchingService extends EventEmitter {
     }
   }
 
-  /**
-   * Check if normalization configuration has changed since last cache build
-   */
-  private hasNormalizationConfigChanged(): boolean {
-    try {
-      const currentVersion = this.computeConfigVersion();
-      const storedVersion = this.db.prepare(
-        'SELECT config_value FROM unified_config WHERE config_key = ?'
-      ).get('frn_lookup_cache_version') as { config_value: string } | undefined;
-
-      return currentVersion !== storedVersion?.config_value;
-    } catch (error) {
-      // If config_key doesn't exist, cache needs to be built
-      return true;
-    }
-  }
-
-  /**
-   * Compute version hash of normalization configuration
-   */
-  private computeConfigVersion(): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256')
-      .update(JSON.stringify({
-        prefixes: this.config.normalizationPrefixes,
-        suffixes: this.config.normalizationSuffixes,
-        abbreviations: this.config.normalizationAbbreviations
-      }))
-      .digest('hex');
-  }
-
-  /**
-   * Save current config version
-   */
-  private saveCacheConfigVersion(): void {
-    const version = this.computeConfigVersion();
-    const existing = this.db.prepare(
-      'SELECT config_key FROM unified_config WHERE config_key = ?'
-    ).get('frn_lookup_cache_version');
-
-    if (existing) {
-      this.db.prepare(
-        'UPDATE unified_config SET config_value = ? WHERE config_key = ?'
-      ).run(version, 'frn_lookup_cache_version');
-    } else {
-      this.db.prepare(`
-        INSERT INTO unified_config (config_key, config_value, config_type, category, is_active)
-        VALUES (?, ?, 'string', 'frn_matching', 1)
-      `).run('frn_lookup_cache_version', version);
-    }
-  }
 
   /**
    * Rebuild frn_lookup_helper_cache from source tables
-   * Only called when normalization config changes
+   * Called at startup and whenever normalization config changes via UI
    */
   async rebuildLookupHelperCache(): Promise<void> {
     const startTime = Date.now();
@@ -1104,9 +1049,6 @@ export class FRNMatchingService extends EventEmitter {
 
       // Rank entries by priority
       this.rankCacheEntries();
-
-      // Store config version
-      this.saveCacheConfigVersion();
 
       const count = this.db.prepare('SELECT COUNT(*) as count FROM frn_lookup_helper_cache').get() as { count: number };
       const elapsed = Date.now() - startTime;

@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "source": "test-no-data-loss",
+    "method": "test-completeness"
+  },
+  "products": [
+    {
+      "bankName": "Santander UK plc",
+      "platform": "direct",
+      "rawPlatform": "direct",
+      "accountType": "easy_access",
+      "aerRate": 3.5,
+      "grossRate": 3.5,
+      "minDeposit": 1,
+      "maxDeposit": 85000
+    },
+    {
+      "bankName": "Barclays Bank UK PLC",
+      "platform": "direct",
+      "rawPlatform": "direct",
+      "accountType": "easy_access",
+      "aerRate": 3.6,
+      "grossRate": 3.6,
+      "minDeposit": 1,
+      "maxDeposit": 85000
+    },
+    {
+      "bankName": "Unknown Bank Alpha",
+      "platform": "direct",
+      "rawPlatform": "direct",
+      "accountType": "easy_access",
+      "aerRate": 3.7,
+      "grossRate": 3.7,
+      "minDeposit": 1,
+      "maxDeposit": 85000
+    },
+    {
+      "bankName": "HSBC UK Bank plc",
+      "platform": "direct",
+      "rawPlatform": "direct",
+      "accountType": "easy_access",
+      "aerRate": 3.8,
+      "grossRate": 3.8,
+      "minDeposit": 1,
+      "maxDeposit": 85000
+    },
+    {
+      "bankName": "Unknown Bank Beta",
+      "platform": "direct",
+      "rawPlatform": "direct",
+      "accountType": "easy_access",
+      "aerRate": 3.9,
+      "grossRate": 3.9,
+      "minDeposit": 1,
+      "maxDeposit": 85000
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 # FRN Cache Rebuild Strategy & Normalization UI Implementation
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** 2025-10-12
-**Status:** Ready for Implementation
-**Estimated Effort:** 4-6 hours
+**Status:** Phase 1 Complete - Ready for Phase 2
+**Estimated Effort:** 3-5 hours remaining (Phase 1: ✅ Complete)
 
 ---
 
@@ -352,48 +352,81 @@ private saveCacheConfigVersion(): void {
 }
 ```
 
-**4. Update loadConfiguration() method (lines 182-188)**
+**4. Update loadConfiguration() method (lines 178-184)** ✅ **DONE**
 
-REPLACE:
+REPLACED:
 ```typescript
 // Rebuild lookup helper cache if normalization config changed
 if (this.hasNormalizationConfigChanged()) {
-  this.logger.info('   Normalization config changed, rebuilding FRN lookup cache...');
+  console.log('Normalization config changed, rebuilding FRN lookup cache...');
   await this.rebuildLookupHelperCache();
 } else {
-  this.logger.info('   ✅ FRN lookup cache up to date');
+  console.log('✅ FRN lookup cache up to date');
 }
 ```
 
 WITH:
 ```typescript
-// Always rebuild lookup helper cache at startup to ensure freshness
-this.logger.info('   Rebuilding FRN lookup cache...');
+// Always rebuild lookup helper cache at startup for consistency
+// This ensures cache is always in sync with current configuration
+// Performance: ~30-50ms is negligible for desktop app startup
 await this.rebuildLookupHelperCache();
 ```
 
-**5. Update rebuildLookupHelperCache() method (lines 915-941)**
+**5. Update rebuildLookupHelperCache() method** ✅ **DONE**
 
-REMOVE the call to saveCacheConfigVersion():
+REMOVED the call to saveCacheConfigVersion() and updated comment:
 
-REPLACE:
 ```typescript
-// Rank entries by priority
-this.rankCacheEntries();
+/**
+ * Rebuild frn_lookup_helper_cache from source tables
+ * Called at startup and whenever normalization config changes via UI
+ */
+async rebuildLookupHelperCache(): Promise<void> {
+  const startTime = Date.now();
 
-// Store config version
-this.saveCacheConfigVersion();
+  try {
+    // Clear existing cache
+    this.db.prepare('DELETE FROM frn_lookup_helper_cache').run();
 
-const count = this.db.prepare('SELECT COUNT(*) as count FROM frn_lookup_helper_cache').get() as { count: number };
+    // Generate entries for each source
+    this.generateManualOverrideEntries();
+    this.generateBOEInstitutionEntries();
+    this.generateSharedBrandEntries();
+
+    // Rank entries by priority
+    this.rankCacheEntries();
+
+    // No longer saves config version - version checking removed
+
+    const count = this.db.prepare('SELECT COUNT(*) as count FROM frn_lookup_helper_cache').get() as { count: number };
+    const elapsed = Date.now() - startTime;
+
+    console.log(`✅ FRN lookup cache rebuilt: ${count.count} entries (${elapsed}ms)`);
+  } catch (error) {
+    this.logger.error(`Failed to rebuild lookup helper cache: ${error}`);
+    throw error;
+  }
+}
 ```
 
-WITH:
-```typescript
-// Rank entries by priority
-this.rankCacheEntries();
+**6. Remove frn_lookup_cache_version from configuration query** ✅ **DONE**
 
-const count = this.db.prepare('SELECT COUNT(*) as count FROM frn_lookup_helper_cache').get() as { count: number };
+REMOVED the exclusion in loadConfiguration():
+```typescript
+// Before:
+WHERE category = 'frn_matching' AND is_active = 1
+  AND config_key != 'frn_lookup_cache_version'
+
+// After:
+WHERE category = 'frn_matching' AND is_active = 1
 ```
+
+**7. Clean up database** ✅ **DONE**
+
+Removed obsolete `frn_lookup_cache_version` from:
+- Production database: `/Users/david/Websites/cash-management-v2/data/database/cash_savings.db`
+- Test database (didn't exist yet)
 
 **Result:**
 - Cache rebuilds unconditionally at every startup
@@ -1307,13 +1340,15 @@ CHANGE TO:
 
 ## Implementation Checklist
 
-### Phase 1: Startup Cache Rebuild
-- [ ] Remove `hasNormalizationConfigChanged()` from FRNMatchingService.ts
-- [ ] Remove `computeConfigVersion()` from FRNMatchingService.ts
-- [ ] Remove `saveCacheConfigVersion()` from FRNMatchingService.ts
-- [ ] Update `loadConfiguration()` to always rebuild cache
-- [ ] Remove `saveCacheConfigVersion()` call from `rebuildLookupHelperCache()`
-- [ ] Test startup: Verify cache always rebuilds
+### Phase 1: Startup Cache Rebuild ✅ **COMPLETE**
+- [x] Remove `hasNormalizationConfigChanged()` from FRNMatchingService.ts
+- [x] Remove `computeConfigVersion()` from FRNMatchingService.ts
+- [x] Remove `saveCacheConfigVersion()` from FRNMatchingService.ts
+- [x] Update `loadConfiguration()` to always rebuild cache
+- [x] Remove `saveCacheConfigVersion()` call from `rebuildLookupHelperCache()`
+- [x] Remove `frn_lookup_cache_version` from unified_config query
+- [x] Delete obsolete `frn_lookup_cache_version` from production database
+- [x] Test startup: Verify cache always rebuilds (57/57 tests passing)
 
 ### Phase 2: Runtime Cache Invalidation
 - [ ] Add import for FRNMatchingService in main.ts

@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "source": "test-enrichment",
+    "method": "test-frn-enrichment"
+  },
+  "products": [
+    {
+      "bankName": "Santander UK plc",
+      "platform": "direct",
+      "rawPlatform": "direct",
+      "accountType": "easy_access",
+      "aerRate": 3.5,
+      "grossRate": 3.5,
+      "minDeposit": 1,
+      "maxDeposit": 85000
+    },
+    {
+      "bankName": "Unknown Test Bank XYZ",
+      "platform": "direct",
+      "rawPlatform": "direct",
+      "accountType": "easy_access",
+      "aerRate": 4,
+      "grossRate": 4,
+      "minDeposit": 1,
+      "maxDeposit": 85000
+    }
+  ]
+}
