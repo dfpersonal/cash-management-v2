@@ -428,6 +428,38 @@ class CashManagementApp {
       }
     });
 
+    // FRN Normalization Configuration handlers
+    ipcMain.handle('get-frn-normalization-config', async () => {
+      try {
+        return await this.databaseService?.getFRNNormalizationConfig();
+      } catch (error) {
+        console.error('Error getting FRN normalization config:', error);
+        throw error;
+      }
+    });
+
+    ipcMain.handle('update-frn-normalization-config', async (_, config: any) => {
+      try {
+        const result = await this.databaseService?.updateFRNNormalizationConfig(config);
+
+        // Rebuild cache after normalization config changes
+        if (this.frnMatchingService) {
+          try {
+            console.log('[FRN Cache] Rebuilding due to normalization config change...');
+            await this.frnMatchingService.rebuildLookupHelperCache();
+          } catch (cacheError) {
+            console.error('[FRN Cache] Failed to rebuild cache:', cacheError);
+            // Don't throw - config was saved successfully
+          }
+        }
+
+        return result;
+      } catch (error) {
+        console.error('Error updating FRN normalization config:', error);
+        throw error;
+      }
+    });
+
     // Logging handler
     ipcMain.handle('log-error', async (_, errorData: any) => {
       console.error('[Renderer Error]', errorData);

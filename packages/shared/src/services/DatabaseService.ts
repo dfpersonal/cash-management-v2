@@ -2027,6 +2027,138 @@ export class DatabaseService {
   }
 
   /**
+   * FRN Normalization Configuration Methods
+   */
+
+  /**
+   * Get FRN normalization configuration from unified_config
+   */
+  async getFRNNormalizationConfig(): Promise<{
+    prefixes: string[];
+    suffixes: string[];
+    abbreviations: Record<string, string>;
+  }> {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT config_key, config_value
+        FROM unified_config
+        WHERE config_key IN (
+          'frn_matching_normalization_prefixes',
+          'frn_matching_normalization_suffixes',
+          'frn_matching_normalization_abbreviations'
+        )
+        AND is_active = 1
+      `;
+
+      this.db.all(query, [], (err, rows: any[]) => {
+        if (err) {
+          console.error('Error fetching FRN normalization config:', err);
+          reject(err);
+          return;
+        }
+
+        // Default values in case database is missing entries
+        const config = {
+          prefixes: [] as string[],
+          suffixes: [] as string[],
+          abbreviations: {} as Record<string, string>
+        };
+
+        for (const row of rows) {
+          try {
+            const value = JSON.parse(row.config_value);
+            if (row.config_key === 'frn_matching_normalization_prefixes') {
+              config.prefixes = value;
+            } else if (row.config_key === 'frn_matching_normalization_suffixes') {
+              config.suffixes = value;
+            } else if (row.config_key === 'frn_matching_normalization_abbreviations') {
+              config.abbreviations = value;
+            }
+          } catch (parseError) {
+            console.error(`Failed to parse ${row.config_key}:`, parseError);
+            // Continue with defaults for this key
+          }
+        }
+
+        resolve(config);
+      });
+    });
+  }
+
+  /**
+   * Update FRN normalization configuration in unified_config
+   */
+  async updateFRNNormalizationConfig(config: {
+    prefixes?: string[];
+    suffixes?: string[];
+    abbreviations?: Record<string, string>;
+  }): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const updates: { key: string; value: string }[] = [];
+
+      if (config.prefixes !== undefined) {
+        updates.push({
+          key: 'frn_matching_normalization_prefixes',
+          value: JSON.stringify(config.prefixes)
+        });
+      }
+
+      if (config.suffixes !== undefined) {
+        updates.push({
+          key: 'frn_matching_normalization_suffixes',
+          value: JSON.stringify(config.suffixes)
+        });
+      }
+
+      if (config.abbreviations !== undefined) {
+        updates.push({
+          key: 'frn_matching_normalization_abbreviations',
+          value: JSON.stringify(config.abbreviations)
+        });
+      }
+
+      if (updates.length === 0) {
+        resolve(true);
+        return;
+      }
+
+      const db = this.db;
+
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+
+        let completed = 0;
+        let hasError = false;
+
+        updates.forEach(({ key, value }) => {
+          db.run(
+            `UPDATE unified_config SET config_value = ?, updated_at = datetime('now') WHERE config_key = ?`,
+            [value, key],
+            (err) => {
+              completed++;
+              if (err) {
+                hasError = true;
+                console.error(`Failed to update ${key}:`, err);
+              }
+
+              if (completed === updates.length) {
+                db.run(hasError ? 'ROLLBACK' : 'COMMIT', (commitErr) => {
+                  if (commitErr || hasError) {
+                    reject(commitErr || new Error('FRN normalization config update failed'));
+                  } else {
+                    console.log(`✅ Updated ${updates.length} FRN normalization config parameter(s)`);
+                    resolve(true);
+                  }
+                });
+              }
+            }
+          );
+        });
+      });
+    });
+  }
+
+  /**
    * Calendar & Reminder Methods
    */
 

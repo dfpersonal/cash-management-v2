@@ -24,6 +24,8 @@ const electronAPI = {
   // Configuration methods
   getConfiguration: () => ipcRenderer.invoke('get-configuration'),
   updateConfiguration: (config: any) => ipcRenderer.invoke('update-configuration', config),
+  getFRNNormalizationConfig: () => ipcRenderer.invoke('get-frn-normalization-config'),
+  updateFRNNormalizationConfig: (config: any) => ipcRenderer.invoke('update-frn-normalization-config', config),
 
   // CRUD methods for Portfolio Management
   getAllDeposits: () => ipcRenderer.invoke('get-all-deposits'),
