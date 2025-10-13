@@ -124,10 +124,7 @@ class MoneyFactsScraper extends ScraperBase {
       
       // Navigate to base page for MoneyFacts
       await this.navigateToPage();
-      
-      // Custom initialization to load known platforms
-      await this.customInitialization();
-      
+
       // Extract data using modular processing (pipeline files generated per account type)
       const extractionResults = await this.extractRateData();
 
