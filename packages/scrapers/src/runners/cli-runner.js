@@ -12,6 +12,8 @@ import { MoneyFactsScraper } from '../scrapers/moneyfacts.js';
 import { getScraperConfig } from '../../config/environments.js';
 import { createRequire } from 'module';
 import { existsSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const require = createRequire(import.meta.url);
 
@@ -68,15 +70,73 @@ class RatesScraper {
     };
   }
 
+  /**
+   * Export platform data from database to JSON file
+   * This is needed for MoneyFacts scraper to have up-to-date platform information
+   */
+  async exportPlatformsForMoneyFacts() {
+    try {
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+
+      // Navigate from scrapers/src/runners to project root
+      const projectRoot = path.resolve(__dirname, '../../../');
+      const dbPath = path.join(projectRoot, 'data/database/cash_savings.db');
+      const outputPath = path.join(projectRoot, 'packages/scrapers/data/known-platforms.json');
+
+      // Check if database exists
+      if (!existsSync(dbPath)) {
+        console.warn(`⚠️  Database not found at ${dbPath}`);
+        console.warn('MoneyFacts will use existing platform data if available');
+        return { success: false, error: 'Database not found' };
+      }
+
+      // Import the compiled JavaScript version of exportPlatforms
+      const electronAppPath = path.join(projectRoot, 'packages/electron-app/dist/main/utils/exportPlatforms.js');
+
+      if (!existsSync(electronAppPath)) {
+        console.warn(`⚠️  Export utility not found at ${electronAppPath}`);
+        console.warn('Please run "npm run build" in the electron-app package');
+        console.warn('MoneyFacts will use existing platform data if available');
+        return { success: false, error: 'Export utility not found' };
+      }
+
+      // Dynamic import of the compiled TypeScript module
+      const { exportPlatformsToJson } = await import(electronAppPath);
+
+      console.log('🔄 Exporting platform data for MoneyFacts scraper...');
+      const result = await exportPlatformsToJson(dbPath, outputPath);
+
+      if (result.success) {
+        console.log(`✅ Exported ${result.count} platforms to known-platforms.json`);
+      } else {
+        console.warn(`⚠️  Platform export failed: ${result.error}`);
+        console.warn('MoneyFacts will continue but may have issues with platform normalization');
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error(`❌ Error exporting platforms: ${error.message}`);
+      console.warn('MoneyFacts will use existing platform data if available');
+      return { success: false, error: error.message };
+    }
+  }
+
   async scrapePlatform(platformKey) {
     const platform = this.availablePlatforms[platformKey];
     if (!platform) {
       throw new Error(`Unknown platform: ${platformKey}`);
     }
 
+    // Export platform data if this is MoneyFacts (needs platform lookup)
+    if (platformKey === 'moneyfacts') {
+      await this.exportPlatformsForMoneyFacts();
+    }
+
     // Check if this is MoneyFacts without specific type filters - run sequentially
-    if (platformKey === 'moneyfacts' && 
-        !this.options.moneyFactsTypes && 
+    if (platformKey === 'moneyfacts' &&
+        !this.options.moneyFactsTypes &&
         (!this.options.moneyFactsExclude || this.options.moneyFactsExclude.length === 0)) {
       console.log(`\n${platform.name}: Running sequential processing for all account types...`);
       return await this.scrapeMoneyFactsSequentially();
@@ -134,7 +194,10 @@ class RatesScraper {
 
   async scrapeMoneyFactsSequentially() {
     console.log('Starting sequential MoneyFacts account type processing...');
-    
+
+    // Export platform data before processing
+    await this.exportPlatformsForMoneyFacts();
+
     const accountTypes = [
       { type: 'easy-access', name: 'Easy Access' },
       { type: 'notice', name: 'Notice Accounts' },
