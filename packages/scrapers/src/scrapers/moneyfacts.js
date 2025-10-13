@@ -637,7 +637,11 @@ class MoneyFactsScraper extends ScraperBase {
       this.logger.info(`Pagination completed after ${totalClicks} clicks`);
       
       // Extract products using corrected logic with error handling
-      const platformVariants = this.knownPlatforms.map(p => p.platform_variant);
+      // Sort platform variants by length (longest first) to avoid partial matches
+      // Example: Check "Raisin UK" (9 chars) before "Raisin" (5 chars)
+      const platformVariants = this.knownPlatforms
+        .map(p => p.platform_variant)
+        .sort((a, b) => b.length - a.length);
       let products = [];
       
       try {
