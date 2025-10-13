@@ -1696,65 +1696,42 @@ export class JSONIngestionService {
   }
 
   /**
-   * Normalize platform names with source context (CRITICAL BUG FIX)
+   * Normalize platform names - simple canonical mappings only
+   * FIXED: Removed source-based mappings that incorrectly changed platforms
    */
   private normalizePlatformName(platform: string, source?: string): string {
     const platformLower = platform.toLowerCase();
 
-    // Source-specific mappings - critical for moneyfacts platform/source confusion
-    const sourceSpecificMappings: Record<string, Record<string, string>> = {
-      'moneyfacts': {
-        'moneyfacts': 'direct',  // ✅ FIXED: Moneyfacts is source, not platform
-        'raisin uk': 'raisin',
-        'raisin.co.uk': 'raisin',
-        'raisin europe': 'raisin',
-        'flagstone im': 'flagstone',
-        'flagstone': 'flagstone',
-        'direct': 'direct'
-      },
-      'ajbell': {
-        'ajbell': 'ajbell',
-        'aj bell': 'ajbell'
-      },
-      'flagstone': {
-        'flagstone': 'flagstone',
-        'flagstone im': 'flagstone'
-      },
-      'hl': {
-        'hl': 'hl active savings',
-        'hargreaves lansdown': 'hl active savings',
-        'hl cash': 'hl active savings',
-        'hl active savings': 'hl active savings'
-      }
-    };
-
-    // Apply source-specific mapping if source is provided
-    if (source) {
-      const sourceMappings = sourceSpecificMappings[source.toLowerCase()];
-      if (sourceMappings && sourceMappings[platformLower]) {
-        return sourceMappings[platformLower].toLowerCase();
-      }
-    }
-
-    // Fallback to generic mappings
-    const genericMappings: Record<string, string> = {
-      'ajbell': 'ajbell',
-      'aj_bell': 'ajbell',
+    // Simple canonical platform name mappings (variant → canonical)
+    const platformMappings: Record<string, string> = {
+      // AJ Bell variants
       'aj bell': 'ajbell',
+      'aj_bell': 'ajbell',
+      'ajbell': 'ajbell',
+
+      // Hargreaves Lansdown variants
+      'hargreaves lansdown': 'hl active savings',
+      'hargreaves_lansdown': 'hl active savings',
+      'hl': 'hl active savings',
+      'hl cash': 'hl active savings',
+      'hl active savings': 'hl active savings',
+
+      // Raisin variants
+      'raisin uk': 'raisin',
+      'raisin.co.uk': 'raisin',
+      'raisin europe': 'raisin',
+      'raisin': 'raisin',
+
+      // Flagstone variants
       'flagstone': 'flagstone',
       'flagstone im': 'flagstone',
-      'hargreaves_lansdown': 'hl active savings',
-      'hargreaves lansdown': 'hl active savings',
-      'hl': 'hl active savings',
-      'hl active savings': 'hl active savings',
-      'raisin uk': 'raisin',
-      'raisin': 'raisin',
-      'raisin.co.uk': 'raisin',
+
+      // Other platforms
       'prosper': 'prosper',
       'direct': 'direct'
     };
 
-    return (genericMappings[platformLower] || platform).toLowerCase();
+    return (platformMappings[platformLower] || platformLower);
   }
 
   /**
