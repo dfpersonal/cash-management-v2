@@ -1022,7 +1022,9 @@ class MoneyFactsScraper extends ScraperBase {
             // Simple platform detection for JSON/CSV output
             for (const platformVariant of platformVariants) {
               if (bankName.includes(platformVariant)) {
-                parsedBankName = bankName.replace(new RegExp(`\\s*${platformVariant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'i'), '').trim();
+                // FIXED: Use proper regex to remove complete platform variant without leaving fragments
+                // Pattern: require space before platform, match entire platform, then space or end of string
+                parsedBankName = bankName.replace(new RegExp(`\\s+${platformVariant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`, 'i'), '').trim();
                 parsedPlatform = platformVariant;
                 break;
               }
