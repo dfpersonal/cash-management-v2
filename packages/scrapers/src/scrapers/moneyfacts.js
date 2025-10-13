@@ -281,8 +281,11 @@ class MoneyFactsScraper extends ScraperBase {
 
   // Extract products from the current page state
   async extractProductsFromCurrentPage(page, pageConfig) {
-    const platformVariants = this.knownPlatforms.map(p => p.platform_variant);
-    
+    // Sort platform variants by length (longest first) to avoid partial matches
+    const platformVariants = this.knownPlatforms
+      .map(p => p.platform_variant)
+      .sort((a, b) => b.length - a.length);
+
     return await page.evaluate((platformVariants, accountType) => {
       const containers = document.querySelectorAll('li.savings-table-item');
       const products = [];
