@@ -1444,6 +1444,16 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       }
 
       logger.info('✅ File cleanup complete');
+
+      // Checkpoint WAL to ensure all data is persisted to main database file
+      logger.info('🔄 Checkpointing WAL file...');
+      try {
+        this.db.prepare('PRAGMA wal_checkpoint(FULL)').run();
+        logger.info('✅ WAL checkpoint complete - all data persisted to main database');
+      } catch (walError: any) {
+        logger.warn(`⚠️  WAL checkpoint failed: ${walError.message}`);
+        // Don't throw - checkpoint failure shouldn't fail the pipeline
+      }
     } catch (error: any) {
       logger.warn(`⚠️  File cleanup encountered an error: ${error.message}`);
       // Don't throw - cleanup failure shouldn't fail the pipeline

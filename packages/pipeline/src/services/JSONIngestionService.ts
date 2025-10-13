@@ -12,6 +12,9 @@ import {
 } from '@cash-mgmt/shared';
 import { logger } from '../utils/PipelineLogger';
 
+// Valid account types for cash management (from database CHECK constraint)
+const VALID_ACCOUNT_TYPES = ['easy_access', 'notice', 'fixed_term', 'limited_access', 'cash_isa'] as const;
+
 // Corruption detection and error handling interfaces
 export enum JSONIngestionCriticalErrorType {
   CONFIG_LOAD_FAILED = 'CONFIG_LOAD_FAILED',
@@ -844,6 +847,13 @@ export class JSONIngestionService {
         validationErrors.push('Invalid AER rate');
       }
 
+      // Account type validation - reject invalid/unknown types
+      if (!product.accountType || !VALID_ACCOUNT_TYPES.includes(product.accountType as any)) {
+        shouldPass = false;
+        const accountTypeValue = product.accountType || 'missing';
+        validationErrors.push(`Invalid account type '${accountTypeValue}' - must be one of: ${VALID_ACCOUNT_TYPES.join(', ')}`);
+      }
+
       // Track validation failures for corruption detection (exclude legitimate rate filtering)
       if (!shouldPass && rejectionReason === 'validation_failed') {
         this.validationTracker?.addValidationFailure();
@@ -863,7 +873,7 @@ export class JSONIngestionService {
           platform: this.normalizePlatformName(product.platform, originalSource), // ✅ FIXED: Normalized platform
           source: originalSource,  // ✅ FIXED: Keep original source separate
           bankName: product.bankName,
-          accountType: product.accountType || 'unknown',
+          accountType: product.accountType,  // Validation ensures this is never invalid
           aerRate: product.aerRate,
           grossRate: product.grossRate || product.aerRate,
           termMonths: product.termMonths ?? null,

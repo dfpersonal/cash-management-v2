@@ -521,18 +521,17 @@ export class DataQualityAnalyzer {
     const businessKeyResults = this.db.prepare(`
       SELECT
         business_key,
-        COUNT(*) as count,
-        AVG(business_key_quality) as quality
+        COUNT(*) as count
       FROM deduplication_groups
       GROUP BY business_key
       ORDER BY count DESC
       LIMIT 20
-    `).all() as Array<{business_key: string; count: number; quality: number}>;
+    `).all() as Array<{business_key: string; count: number}>;
 
     const businessKeyDistribution = businessKeyResults.map(row => ({
       key: row.business_key,
       count: row.count,
-      quality: row.quality
+      quality: 0  // Quality scores stored as JSON in quality_scores column
     }));
 
     // Calculate metrics
