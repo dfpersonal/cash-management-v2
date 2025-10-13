@@ -10,7 +10,9 @@
     "typecheck:tests": "tsc --noEmit --skipLibCheck",
     "test": "jest",
     "test:ci": "npm run typecheck && npm run test",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "cli": "npm run build && electron dist/cli.js",
+    "start": "npm run cli"
   },
   "dependencies": {
     "@cash-mgmt/shared": "*"

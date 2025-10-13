@@ -93,6 +93,69 @@ npm run dev:pipeline-debug
 - SQL query execution
 - Deduplication group details
 
+## CLI Usage
+
+### Quick Start
+
+The pipeline package includes a standalone CLI tool for debugging and testing without rebuilding the Electron app.
+
+**Note:** The CLI runs via Electron (not plain Node.js) due to better-sqlite3 native bindings, but it's still **much faster** than rebuilding the full Electron app (~1-2 seconds vs ~30+ seconds).
+
+```bash
+# Run the full pipeline
+npm run cli
+
+# Run with verbose logging
+PIPELINE_VERBOSE=true npm run cli
+
+# Run with debug logging
+PIPELINE_DEBUG=true npm run cli
+```
+
+### Common Commands
+
+```bash
+# Stop after a specific stage
+npm run cli -- --stop-after json_ingestion
+npm run cli -- --stop-after frn_matching
+npm run cli -- --stop-after deduplication
+
+# Rebuild from raw data only (skip ingestion)
+npm run cli -- --rebuild-only
+
+# Process specific JSON files
+npm run cli -- --files ../scrapers/data/moneyfacts/*.json
+
+# Show help
+npm run cli -- --help
+```
+
+### Why Use the CLI?
+
+The CLI tool is ideal for:
+
+- **Rapid iteration** - No need to rebuild the Electron app
+- **Debugging** - Stop at specific stages to inspect data
+- **Testing** - Test configuration changes quickly
+- **Development** - Faster feedback loop during development
+- **CI/CD** - Automated testing in continuous integration
+
+### Environment Variables
+
+All logging and execution mode variables work with the CLI:
+
+| Variable | Effect | Example |
+|----------|--------|---------|
+| `PIPELINE_VERBOSE=true` | Show stage progress | `PIPELINE_VERBOSE=true npm run cli` |
+| `PIPELINE_DEBUG=true` | Show detailed logs | `PIPELINE_DEBUG=true npm run cli` |
+| `PIPELINE_ATOMIC=false` | Incremental mode | `PIPELINE_ATOMIC=false npm run cli` |
+| `DATABASE_PATH=<path>` | Override database | `DATABASE_PATH=/tmp/test.db npm run cli` |
+| `PIPELINE_DATA_QUALITY=true` | Enable quality analysis | `PIPELINE_DATA_QUALITY=true npm run cli` |
+
+### Comprehensive Guide
+
+For detailed debugging workflows, troubleshooting, and advanced usage, see [CLI-DEBUG-GUIDE.md](./CLI-DEBUG-GUIDE.md).
+
 ## Services
 
 ### JSONIngestionService
