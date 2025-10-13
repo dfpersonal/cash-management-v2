@@ -15,7 +15,8 @@ class MoneyFactsScraper extends ScraperBase {
     // Create component name that includes account type for better log file naming
     let componentName = 'moneyfacts';
     if (options.accountTypes && options.accountTypes.length === 1) {
-      componentName = `moneyfacts-${options.accountTypes[0]}`;
+      // Convert hyphen to underscore for consistent naming (e.g., 'easy-access' → 'easy_access')
+      componentName = `moneyfacts-${options.accountTypes[0].replace('-', '_')}`;
     }
     
     super(componentName, {

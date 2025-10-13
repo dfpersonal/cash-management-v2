@@ -707,10 +707,11 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
 
   /**
    * Execute JSON Ingestion stage (simplified)
+   * FIXED: Process each file individually to preserve source/method metadata
    */
   private async executeJSONIngestionStage(inputFiles: string[]): Promise<IngestionServiceResult> {
     try {
-      // Process multiple files - accumulate IngestionServiceResult
+      // Accumulate results from each file
       let combinedResult: IngestionServiceResult = {
         passed: [],
         rejected: [],
@@ -726,15 +727,12 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
         }
       };
 
-      // Process all files and combine products with metadata
-      let allProducts: ProductData[] = [];
-      let combinedMetadata: { source: string; method: string } | null = null;
-
+      // Process each file individually to preserve source/method
       for (const filePath of inputFiles) {
         const content = await require('fs').promises.readFile(filePath, 'utf8');
         const data: JSONFileData = JSON.parse(content);
 
-        // Validate new metadata format
+        // Validate metadata format
         if (!data.metadata || !data.metadata.source || !data.metadata.method) {
           throw new Error(`Invalid JSON file format: missing metadata in ${filePath}`);
         }
@@ -743,30 +741,40 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
           throw new Error(`Invalid JSON file format: products must be an array in ${filePath}`);
         }
 
-        // For OrchestrationService, we need to combine multiple files
-        // Use the metadata from the first file, or create a combined identifier
-        if (!combinedMetadata) {
-          combinedMetadata = data.metadata;
-        } else if (combinedMetadata.source !== data.metadata.source) {
-          // Multiple sources - create a combined method identifier
-          combinedMetadata = {
-            source: "multiple",
-            method: "orchestration-rebuild"
-          };
+        // Process this file with its specific source/method metadata
+        const fileResult = await this.jsonIngestionService.processForProducts(
+          data.products,
+          data.metadata  // Preserve original source/method from file
+        );
+
+        // Accumulate results
+        combinedResult.passed.push(...fileResult.passed);
+        combinedResult.rejected.push(...fileResult.rejected);
+        combinedResult.errors.push(...fileResult.errors);
+        combinedResult.statistics.processed += fileResult.statistics.processed;
+        combinedResult.statistics.passed += fileResult.statistics.passed;
+        combinedResult.statistics.rejected += fileResult.statistics.rejected;
+        combinedResult.statistics.validationErrors += fileResult.statistics.validationErrors;
+        combinedResult.statistics.rateFiltered += fileResult.statistics.rateFiltered;
+        combinedResult.statistics.duration += fileResult.statistics.duration;
+
+        // Merge platform statistics
+        for (const [platform, stats] of Object.entries(fileResult.statistics.byPlatform)) {
+          if (!combinedResult.statistics.byPlatform[platform]) {
+            combinedResult.statistics.byPlatform[platform] = {
+              processed: 0,
+              passed: 0,
+              rejected: 0
+            };
+          }
+          combinedResult.statistics.byPlatform[platform].processed += stats.processed;
+          combinedResult.statistics.byPlatform[platform].passed += stats.passed;
+          combinedResult.statistics.byPlatform[platform].rejected += stats.rejected;
         }
-
-        allProducts.push(...data.products);
       }
 
-      if (!combinedMetadata) {
-        throw new Error('No files processed or no valid metadata found');
-      }
+      return combinedResult;
 
-      // Use processForProducts which now also handles database insertion
-      const result = await this.jsonIngestionService.processForProducts(allProducts, combinedMetadata);
-      return result;
-
-      // Result is already returned above
     } catch (error) {
       await this.handleCriticalError(
         OrchestratorCriticalErrorType.STAGE_EXECUTION_FAILED,
@@ -1403,9 +1411,9 @@ export class OrchestrationService extends EventEmitter implements RulesBasedModu
       for (const filePath of inputFiles) {
         try {
           // Extract timestamp and platform from normalized filename
-          // Format: platform-normalized-timestamp.json
+          // Format: platform-normalized-timestamp.json (platform may contain spaces, hyphens, or underscores)
           const filename = path.basename(filePath);
-          const match = filename.match(/^([a-z]+)-normalized-(.+)\.json$/);
+          const match = filename.match(/^([\w\s-]+)-normalized-(.+)\.json$/);
 
           if (!match) {
             logger.warn(`⚠️  Skipping cleanup for non-standard filename: ${filename}`);
