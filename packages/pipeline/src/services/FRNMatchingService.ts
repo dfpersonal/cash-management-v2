@@ -50,7 +50,8 @@ export interface FRNMatchingStats {
   fuzzyMatches: number;
   aliasMatches: number;
   noMatches: number;
-  researchQueue: number;
+  researchQueue: number; // Number of products sent to research queue
+  researchQueueBanks: number; // Number of unique banks in research queue
   averageConfidence: number;
   processingTimeMs: number;
 }
@@ -488,9 +489,13 @@ export class FRNMatchingService extends EventEmitter {
       aliasMatches: 0,
       noMatches: 0,
       researchQueue: 0,
+      researchQueueBanks: 0,
       averageConfidence: 0,
       processingTimeMs: 0
     };
+
+    // Track unique banks added to research queue for accurate statistics
+    const uniqueBanksAddedToQueue = new Set<string>();
 
     const enrichedProducts: EnrichedProduct[] = [];
     const errors: string[] = [];
@@ -510,7 +515,7 @@ export class FRNMatchingService extends EventEmitter {
           }
 
           try {
-            const enriched = await this.enrichProduct(product);
+            const enriched = await this.enrichProduct(product, uniqueBanksAddedToQueue);
             enrichedProducts.push(enriched);
 
             // Update statistics
@@ -589,8 +594,9 @@ export class FRNMatchingService extends EventEmitter {
       // Calculate final statistics
       stats.averageConfidence = totalConfidence / Math.max(enrichedProducts.length, 1);
       stats.processingTimeMs = Date.now() - startTime;
+      stats.researchQueueBanks = uniqueBanksAddedToQueue.size;
 
-      this.logger.info(`FRN matching completed: ${stats.exactMatches} exact, ${stats.fuzzyMatches} fuzzy, ${stats.aliasMatches} alias, ${stats.noMatches} no match, ${stats.researchQueue} research queue`);
+      this.logger.info(`FRN matching completed: ${stats.exactMatches} exact, ${stats.fuzzyMatches} fuzzy, ${stats.aliasMatches} alias, ${stats.noMatches} no match, ${stats.researchQueue} products from ${stats.researchQueueBanks} banks`);
 
       // Update available_products_raw with enriched FRN data
       await this.updateRawTableWithEnrichments(enrichedProducts);
@@ -626,8 +632,9 @@ export class FRNMatchingService extends EventEmitter {
 
   /**
    * Enrich a single product with FRN data
+   * @param uniqueBanksAddedToQueue Set to track unique banks added to research queue
    */
-  private async enrichProduct(product: any): Promise<EnrichedProduct> {
+  private async enrichProduct(product: any, uniqueBanksAddedToQueue: Set<string>): Promise<EnrichedProduct> {
     const bankName = product.bankName || product.bank_name || '';
     const normalizedBankName = this.normalizeBankName(bankName);
 
@@ -688,14 +695,20 @@ export class FRNMatchingService extends EventEmitter {
       // If status is RESEARCH_QUEUE, add to queue
       if (enriched.frnStatus === 'RESEARCH_QUEUE' && this.config.enableResearchQueue && this.config.autoFlagUnmatched) {
         if (this.shouldAddToResearchQueue(normalizedBankName)) {
-          this.addToResearchQueue(normalizedBankName, bankName);
+          const wasNew = this.addToResearchQueue(normalizedBankName, bankName);
+          if (wasNew) {
+            uniqueBanksAddedToQueue.add(bankName);
+          }
         }
       }
     } else {
       // No match found - add to research queue if enabled
       if (this.config.enableResearchQueue && this.config.autoFlagUnmatched && this.shouldAddToResearchQueue(normalizedBankName)) {
         enriched.frnStatus = 'RESEARCH_QUEUE';
-        this.addToResearchQueue(normalizedBankName, bankName);
+        const wasNew = this.addToResearchQueue(normalizedBankName, bankName);
+        if (wasNew) {
+          uniqueBanksAddedToQueue.add(bankName);
+        }
       }
     }
 
@@ -904,22 +917,32 @@ export class FRNMatchingService extends EventEmitter {
 
   /**
    * Add bank to research queue
+   * @returns true if bank was newly added (first product), false if it already existed (product count incremented)
    */
-  private addToResearchQueue(normalizedBankName: string, originalBankName: string): void {
+  private addToResearchQueue(normalizedBankName: string, originalBankName: string): boolean {
     try {
-      if (!this.stmts) return;
+      if (!this.stmts) return false;
+
+      // Check if bank already exists in queue before insertion
+      const existing = this.db.prepare(
+        'SELECT COUNT(*) as count FROM frn_research_queue WHERE bank_name = ?'
+      ).get(originalBankName) as any;
+
+      const wasNew = (existing?.count || 0) === 0;
+
+      // Insert or update with product count
       this.stmts.insertResearch.run(
         originalBankName,    // bank_name (use original, not normalized)
         'pipeline',         // platform
         'frn_matching',     // source
         new Date().toISOString() // first_seen
       );
+
+      return wasNew;
     } catch (error) {
-      // Ignore duplicate errors
       const errorMsg = error instanceof Error ? error.message : String(error);
-      if (!errorMsg.includes('UNIQUE constraint failed')) {
-        this.logger.error(`Failed to add to research queue: ${errorMsg}`);
-      }
+      this.logger.error(`Failed to add to research queue: ${errorMsg}`);
+      return false;
     }
   }
 
@@ -957,9 +980,12 @@ export class FRNMatchingService extends EventEmitter {
       `),
 
       insertResearch: this.db.prepare(`
-        INSERT OR IGNORE INTO frn_research_queue
-        (bank_name, platform, source, first_seen)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO frn_research_queue
+        (bank_name, platform, source, product_count, first_seen)
+        VALUES (?, ?, ?, 1, ?)
+        ON CONFLICT(bank_name) DO UPDATE SET
+          product_count = product_count + 1,
+          last_seen = CURRENT_TIMESTAMP
       `)
     };
   }
