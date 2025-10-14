@@ -2,9 +2,29 @@
 
 **Document Version**: 1.0
 **Date**: 2025-10-09
-**Status**: Proposed
+**Status**: ⚠️ **DEPRECATED** - Analysis was outdated
 
 ---
+
+> **⚠️ DEPRECATED DOCUMENT**
+>
+> This document has been **superseded** by the consolidated migration plan.
+>
+> **SEE INSTEAD**: [SQLITE-CONSOLIDATION-PLAN.md](./SQLITE-CONSOLIDATION-PLAN.md)
+>
+> **Why deprecated**:
+> - Analysis was incorrect: `@cash-mgmt/scrapers` has NO direct DB dependencies (verified Jan 14, 2025)
+> - Missing critical information about Electron dependency
+> - Did not account for pipeline running via Electron
+> - Incomplete picture of actual architecture
+>
+> **For accurate migration guidance**: Use SQLITE-CONSOLIDATION-PLAN.md and SQLITE-MIGRATION-CHECKLIST.md
+>
+> **Deprecated**: January 14, 2025
+
+---
+
+## ⚠️ Original Document Below (For Reference Only)
 
 ## 1. Executive Summary
 

@@ -4,6 +4,21 @@
 **Last Updated:** October 12, 2025
 **Status:** Active - Resolved with automated solution
 
+---
+
+> **📋 NOTE**: This document is part of a consolidated migration plan.
+>
+> **For complete migration strategy, see**: [SQLITE-CONSOLIDATION-PLAN.md](./SQLITE-CONSOLIDATION-PLAN.md)
+>
+> **This document remains VALID** for:
+> - ✅ Electron rebuild mechanism (still in use)
+> - ✅ Troubleshooting native module issues
+> - ✅ Electron upgrade procedures
+>
+> **Updated**: January 14, 2025
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
