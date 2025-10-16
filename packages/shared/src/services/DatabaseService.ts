@@ -3558,8 +3558,8 @@ export class DatabaseService {
       const queries = {
         totalFRNs: `SELECT COUNT(DISTINCT frn) as count FROM frn_lookup_helper WHERE frn IS NOT NULL`,
         totalOverrides: `SELECT COUNT(*) as count FROM frn_manual_overrides`,
-        pendingResearch: `SELECT COUNT(*) as count FROM frn_research_temp WHERE researched_frn IS NULL`,
-        completedResearch: `SELECT COUNT(*) as count FROM frn_research_temp WHERE researched_frn IS NOT NULL`,
+        pendingResearch: `SELECT COUNT(*) as count FROM frn_research_queue WHERE status IN ('pending', 'researching')`,
+        completedResearch: `SELECT COUNT(*) as count FROM frn_manual_overrides WHERE created_at IS NOT NULL`,
         uniqueBanks: `SELECT COUNT(DISTINCT bank) as count FROM my_deposits WHERE is_active = 1`,
         banksWithFRN: `SELECT COUNT(DISTINCT bank) as count FROM my_deposits WHERE is_active = 1 AND frn IS NOT NULL AND frn != ''`,
         recentActivity: `SELECT COUNT(*) as count FROM frn_manual_overrides WHERE created_at >= datetime('now', '-7 days')`
@@ -3615,15 +3615,15 @@ export class DatabaseService {
         
         UNION ALL
         
-        SELECT 
+        SELECT
           'research_completed' as type,
-          bank_name as entity_name,
-          researched_frn as frn,
-          researched_firm_name as firm_name,
-          research_date as activity_date,
-          research_notes as notes
-        FROM frn_research_temp
-        WHERE researched_frn IS NOT NULL
+          scraped_name as entity_name,
+          frn,
+          firm_name,
+          created_at as activity_date,
+          notes
+        FROM frn_manual_overrides
+        WHERE notes LIKE 'Manually researched:%'
         
         ORDER BY activity_date DESC
         LIMIT ?
@@ -3795,24 +3795,24 @@ export class DatabaseService {
     return new Promise((resolve, reject) => {
       const { searchTerm, status = 'pending', limit = 50, offset = 0 } = filters || {};
       
-      let whereClause = status === 'pending' 
-        ? 'WHERE researched_frn IS NULL'
-        : 'WHERE researched_frn IS NOT NULL';
-      
+      let whereClause = status === 'pending'
+        ? "WHERE status IN ('pending', 'researching')"
+        : "WHERE status IN ('ignored', 'cannot_resolve')";
+
       const params: any[] = [];
-      
+
       if (searchTerm) {
         whereClause += ` AND (
-          bank_name LIKE ? OR 
-          platform LIKE ? OR 
+          bank_name LIKE ? OR
+          platform LIKE ? OR
           research_notes LIKE ?
         )`;
         const searchPattern = `%${searchTerm}%`;
         params.push(searchPattern, searchPattern, searchPattern);
       }
-      
+
       // Get total count
-      const countQuery = `SELECT COUNT(*) as total FROM frn_research_temp ${whereClause}`;
+      const countQuery = `SELECT COUNT(*) as total FROM frn_research_queue ${whereClause}`;
       
       this.db.get(countQuery, params, (err, countRow: any) => {
         if (err) {
@@ -3825,12 +3825,11 @@ export class DatabaseService {
         
         // Get paginated results
         const dataQuery = `
-          SELECT 
-            rowid,
+          SELECT
+            id as rowid,
             bank_name,
             platform,
             source,
-            account_type,
             product_count,
             min_rate,
             max_rate,
@@ -3840,13 +3839,18 @@ export class DatabaseService {
             researched_frn,
             researched_firm_name,
             research_notes,
-            research_status,
+            status,
+            priority,
+            researched_by,
             research_date,
-            applied_date
-          FROM frn_research_temp
+            ignored_reason,
+            ignored_by,
+            ignored_date
+          FROM frn_research_queue
           ${whereClause}
-          ORDER BY 
-            CASE WHEN researched_frn IS NULL THEN 0 ELSE 1 END,
+          ORDER BY
+            priority DESC,
+            product_count DESC,
             last_seen DESC
           LIMIT ? OFFSET ?
         `;
@@ -3869,14 +3873,13 @@ export class DatabaseService {
   async completeFRNResearch(rowId: number, frn: string, firmName: string, notes?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const query = `
-        UPDATE frn_research_temp 
-        SET 
+        UPDATE frn_research_queue
+        SET
           researched_frn = ?,
           researched_firm_name = ?,
           research_notes = ?,
-          research_status = 'completed',
           research_date = datetime('now')
-        WHERE rowid = ?
+        WHERE id = ?
       `;
       
       this.db.run(query, [frn, firmName, notes || '', rowId], (err) => {
@@ -3891,13 +3894,20 @@ export class DatabaseService {
   }
 
   /**
-   * Dismiss FRN research item
+   * Dismiss FRN research item by marking it as ignored
    */
-  async dismissFRNResearch(rowId: number): Promise<void> {
+  async dismissFRNResearch(rowId: number, reason?: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      const query = `DELETE FROM frn_research_temp WHERE rowid = ?`;
-      
-      this.db.run(query, [rowId], (err) => {
+      const query = `
+        UPDATE frn_research_queue
+        SET
+          status = 'ignored',
+          ignored_reason = ?,
+          ignored_date = datetime('now')
+        WHERE id = ?
+      `;
+
+      this.db.run(query, [reason || 'Dismissed by user', rowId], (err) => {
         if (err) {
           console.error('Error dismissing FRN research:', err);
           reject(err);
