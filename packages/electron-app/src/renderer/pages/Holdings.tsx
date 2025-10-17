@@ -28,6 +28,7 @@ import { Transaction, TransactionForm, InterestConfiguration } from '@cash-mgmt/
 import { TransactionList } from '../components/transactions/TransactionList';
 import { TransactionEntry } from '../components/transactions/TransactionEntry';
 import { InterestConfiguration as InterestConfigurationComponent } from '../components/transactions/InterestConfiguration';
+import { ReconciliationWizard } from '../components/reconciliation/ReconciliationWizard';
 
 interface HoldingsProps {
   appState: AppState;
@@ -69,6 +70,13 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
   // Transaction entry dialog state
   const [transactionEntryOpen, setTransactionEntryOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  // Reconciliation dialog state
+  const [reconciliationDialogOpen, setReconciliationDialogOpen] = useState(false);
+  const [reconciliationRefreshTrigger, setReconciliationRefreshTrigger] = useState(0);
+
+  // Transaction refresh trigger
+  const [transactionRefreshTrigger, setTransactionRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -125,8 +133,9 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
       } else {
         await window.electronAPI.createTransaction(transaction);
       }
-      
-      // Refresh transactions (will be handled by TransactionList component)
+
+      // Refresh transactions
+      setTransactionRefreshTrigger(prev => prev + 1);
       setTransactionEntryOpen(false);
       setEditingTransaction(null);
     } catch (err: any) {
@@ -137,14 +146,14 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
   // Handle interest configuration save
   const handleSaveInterestConfig = async (config: InterestConfiguration) => {
     if (!selectedAccount || selectedAccount.id === undefined) return;
-    
+
     try {
       await window.electronAPI.updateInterestConfiguration(selectedAccount.id, config);
-      
+
       // Refresh account data
       const updatedDeposits = await window.electronAPI.getAllDeposits();
       setDeposits(updatedDeposits);
-      
+
       // Update selected account
       const updatedAccount = updatedDeposits.find((d: Deposit) => d.id === selectedAccount.id);
       if (updatedAccount) {
@@ -153,6 +162,13 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
     } catch (err: any) {
       throw new Error(err.message || 'Failed to save interest configuration');
     }
+  };
+
+  // Handle opening reconciliation
+  const handleOpenReconciliation = () => {
+    if (!selectedAccount) return;
+    setReconciliationRefreshTrigger(prev => prev + 1);
+    setReconciliationDialogOpen(true);
   };
 
   const columns: GridColDef[] = [
@@ -362,6 +378,7 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
                     accountId={selectedAccount.id}
                     accountName={selectedAccount.account_name || selectedAccount.type}
                     bankName={selectedAccount.bank}
+                    refreshTrigger={transactionRefreshTrigger}
                     onAddTransaction={() => {
                       setEditingTransaction(null);
                       setTransactionEntryOpen(true);
@@ -370,6 +387,7 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
                       setEditingTransaction(transaction);
                       setTransactionEntryOpen(true);
                     }}
+                    onStartReconciliation={handleOpenReconciliation}
                   />
                 )}
               </TabPanel>
@@ -398,6 +416,27 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
           transaction={editingTransaction}
           accountId={selectedAccount.id}
           currentBalance={selectedAccount.balance || 0}
+        />
+      )}
+
+      {/* Reconciliation Wizard */}
+      {selectedAccount && (
+        <ReconciliationWizard
+          open={reconciliationDialogOpen}
+          onClose={() => {
+            setReconciliationDialogOpen(false);
+          }}
+          account={selectedAccount}
+          refreshTrigger={reconciliationRefreshTrigger}
+          onComplete={async () => {
+            // Refresh data after reconciliation
+            const holdingsData = await window.electronAPI.getPortfolioHoldings();
+            setHoldings(holdingsData);
+            const depositsData = await window.electronAPI.getAllDeposits();
+            setDeposits(depositsData);
+            // Refresh transaction list
+            setTransactionRefreshTrigger(prev => prev + 1);
+          }}
         />
       )}
     </Box>

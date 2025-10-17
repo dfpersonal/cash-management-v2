@@ -706,6 +706,19 @@ export const PortfolioManagement: React.FC = () => {
   };
   
   const handleOpenReconciliation = (deposit: Deposit) => {
+    // Validate that the deposit has the required ID
+    if (!deposit || deposit.id === undefined || deposit.id === null) {
+      showSnackbar('Cannot open reconciliation: Invalid account selected', 'error');
+      console.error('handleOpenReconciliation: Invalid deposit object', deposit);
+      return;
+    }
+
+    // Validate that the account is active
+    if (!deposit.is_active) {
+      showSnackbar('Cannot reconcile an inactive account', 'error');
+      return;
+    }
+
     setSelectedAccountForReconciliation(deposit);
     setReconciliationRefreshTrigger(prev => prev + 1); // Force refresh when opening
     setReconciliationDialogOpen(true);

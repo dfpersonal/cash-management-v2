@@ -58,6 +58,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   });
   const [lastReconciled, setLastReconciled] = useState<string | null>(null);
   const [totalBalance, setTotalBalance] = useState<number>(0);
+  const [internalRefreshTrigger, setInternalRefreshTrigger] = useState(0);
+
+  // Local state for date inputs to prevent immediate re-renders
+  const [startDateInput, setStartDateInput] = useState<string>('');
+  const [endDateInput, setEndDateInput] = useState<string>('');
 
   // Load transactions
   const loadTransactions = useCallback(async () => {
@@ -68,11 +73,19 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       const response = await window.electronAPI.getAccountTransactions(accountId, filters);
       const data = response.transactions || [];
       setTransactions(data);
-      
-      // Calculate total balance from last transaction
+
+      // Calculate total balance from most recent transaction by date
       if (data.length > 0) {
-        const lastTransaction = data[data.length - 1];
-        setTotalBalance(lastTransaction.balance_after || 0);
+        // Sort by transaction_date descending to find the most recent
+        const sortedByDate = [...data].sort((a, b) => {
+          const dateA = new Date(a.transaction_date || 0).getTime();
+          const dateB = new Date(b.transaction_date || 0).getTime();
+          return dateB - dateA;
+        });
+        const mostRecentTransaction = sortedByDate[0];
+        setTotalBalance(mostRecentTransaction.balance_after || 0);
+      } else {
+        setTotalBalance(0);
       }
 
       // Get reconciliation history to show last reconciled date
@@ -86,11 +99,24 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [accountId, filters]);
+  }, [accountId, filters, internalRefreshTrigger]);
 
   useEffect(() => {
     loadTransactions();
   }, [loadTransactions, refreshTrigger]);
+
+  // Debounced effect to update filters when date inputs change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({
+        ...prev,
+        start_date: startDateInput || undefined,
+        end_date: endDateInput || undefined,
+      }));
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [startDateInput, endDateInput]);
 
   // Format currency
   const formatCurrency = (value: number | null | undefined) => {
@@ -294,7 +320,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             >
               Reconcile
             </Button>
-            <IconButton onClick={loadTransactions} size="small">
+            <IconButton
+              onClick={() => setInternalRefreshTrigger(prev => prev + 1)}
+              size="small"
+              data-testid="refresh-transactions"
+            >
               <RefreshIcon />
             </IconButton>
           </Stack>
@@ -336,8 +366,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             type="date"
             label="From Date"
             size="small"
-            value={filters.start_date || ''}
-            onChange={(e) => handleFilterChange('start_date', e.target.value)}
+            value={startDateInput}
+            onChange={(e) => setStartDateInput(e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ minWidth: 150 }}
           />
@@ -346,8 +376,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             type="date"
             label="To Date"
             size="small"
-            value={filters.end_date || ''}
-            onChange={(e) => handleFilterChange('end_date', e.target.value)}
+            value={endDateInput}
+            onChange={(e) => setEndDateInput(e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ minWidth: 150 }}
           />
