@@ -59,6 +59,7 @@ import {
   Receipt as TransactionsIcon,
   MoreVert as MoreVertIcon,
   Description as DocumentsIcon,
+  AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
 import { Deposit } from '@cash-mgmt/shared';
 import { Transaction, TransactionForm, InterestConfiguration } from '@cash-mgmt/shared';
@@ -110,11 +111,18 @@ const defaultPendingDeposit: any = {
 
 // Liquidity tier options will be loaded from database
 
-const interestFrequencyOptions = [
+const interestPaymentTypeOptions = [
   { value: 'Monthly', label: 'Monthly' },
   { value: 'Quarterly', label: 'Quarterly' },
   { value: 'Annually', label: 'Annually' },
-  { value: 'Maturity', label: 'At Maturity' },
+  { value: 'Fixed_Date', label: 'Fixed Date Each Year' },
+  { value: 'At_Maturity', label: 'At End of Term/Notice' },
+];
+
+const interestPaymentDestinationOptions = [
+  { value: 'Same_Account', label: 'Same Account' },
+  { value: 'Other_Account_Same_Bank', label: 'Another Account at Same Bank' },
+  { value: 'Designated_Account', label: 'Designated Current Account' },
 ];
 
 export const PortfolioManagement: React.FC = () => {
@@ -1389,16 +1397,6 @@ export const PortfolioManagement: React.FC = () => {
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <SmartTextField
-                      label="Notice Period (Text)"
-                      value={formData.notice_period || ''}
-                      onChange={(e) => handleInputChange('notice_period', e.target.value)}
-                      fullWidth
-                      helperText="e.g., '95 days', 'Instant access', etc."
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <SmartTextField
                       label="Notice Period (Days)"
                       type="number"
                       value={formData.notice_period_days || ''}
@@ -1412,18 +1410,9 @@ export const PortfolioManagement: React.FC = () => {
                       fullWidth
                       inputProps={{ min: 0 }}
                       error={!!validationErrors.notice_period_days}
-                      helperText={validationErrors.notice_period_days || "Numeric value for calculations"}
+                      helperText={validationErrors.notice_period_days}
                       InputLabelProps={{ shrink: true }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <SmartTextField
-                      label="Term (Text)"
-                      value={formData.term || ''}
-                      onChange={(e) => handleInputChange('term', e.target.value)}
-                      fullWidth
-                      helperText="e.g., '2 years', '18 months', etc."
-                      InputLabelProps={{ shrink: true }}
+                      disabled={formData.sub_type === 'Term'}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -1441,8 +1430,9 @@ export const PortfolioManagement: React.FC = () => {
                       fullWidth
                       inputProps={{ min: 0 }}
                       error={!!validationErrors.term_months}
-                      helperText={validationErrors.term_months || "Numeric value for calculations"}
+                      helperText={validationErrors.term_months}
                       InputLabelProps={{ shrink: true }}
+                      disabled={formData.sub_type === 'Notice'}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -1479,23 +1469,189 @@ export const PortfolioManagement: React.FC = () => {
                       helperText={validationErrors.earliest_withdrawal_date}
                     />
                   </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <SmartTextField
+                      label="Minimum Deposit"
+                      type="number"
+                      value={formData.min_deposit || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow empty string or valid numbers
+                        if (value === '' || !isNaN(Number(value))) {
+                          handleInputChange('min_deposit', value === '' ? null : Number(value));
+                        }
+                      }}
+                      fullWidth
+                      InputProps={{ startAdornment: '£' }}
+                      inputProps={{ min: 0 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <SmartTextField
+                      label="Maximum Deposit"
+                      type="number"
+                      value={formData.max_deposit || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow empty string or valid numbers
+                        if (value === '' || !isNaN(Number(value))) {
+                          handleInputChange('max_deposit', value === '' ? null : Number(value));
+                        }
+                      }}
+                      fullWidth
+                      InputProps={{ startAdornment: '£' }}
+                      inputProps={{ min: 0 }}
+                    />
+                  </Grid>
+
+                  {/* Interest Payment Configuration */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <AttachMoneyIcon fontSize="small" />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                        Interest Payment Configuration
+                      </Typography>
+                    </Box>
+                  </Grid>
+
                   <Grid item xs={12} md={6}>
                     <SmartSelect
-                      label="Payment Frequency"
+                      label="Interest Payment Type"
                       fullWidth
                       selectProps={{
-                        value: formData.interest_payment_frequency || '',
-                        onChange: (e) => handleInputChange('interest_payment_frequency', e.target.value),
-                        displayEmpty: true,
+                        value: (formData as any).interest_payment_type || '',
+                        onChange: (e) => handleInputChange('interest_payment_type', e.target.value),
                       }}
                     >
-                      {interestFrequencyOptions.map(option => (
+                      {interestPaymentTypeOptions.map(option => (
                         <MenuItem key={option.value} value={option.value}>
                           {option.label}
                         </MenuItem>
                       ))}
                     </SmartSelect>
                   </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <SmartTextField
+                      label="Next Payment Date"
+                      type="date"
+                      value={(formData as any).interest_next_payment_date || ''}
+                      onChange={(e) => handleInputChange('interest_next_payment_date', e.target.value)}
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      helperText="Expected date of next interest payment"
+                    />
+                  </Grid>
+
+                  {/* Conditional fields for Fixed_Date payment type */}
+                  {(formData as any).interest_payment_type === 'Fixed_Date' && (
+                    <>
+                      <Grid item xs={12} md={6}>
+                        <SmartTextField
+                          label="Fixed Payment Day"
+                          type="number"
+                          value={(formData as any).interest_fixed_payment_day || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || !isNaN(Number(value))) {
+                              handleInputChange('interest_fixed_payment_day', value === '' ? null : Number(value));
+                            }
+                          }}
+                          fullWidth
+                          inputProps={{ min: 1, max: 31 }}
+                          helperText="Day of month (1-31)"
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <SmartSelect
+                          label="Fixed Payment Month"
+                          fullWidth
+                          selectProps={{
+                            value: (formData as any).interest_fixed_payment_month || '',
+                            onChange: (e) => handleInputChange('interest_fixed_payment_month', e.target.value),
+                          }}
+                        >
+                          <MenuItem value={1}>January</MenuItem>
+                          <MenuItem value={2}>February</MenuItem>
+                          <MenuItem value={3}>March</MenuItem>
+                          <MenuItem value={4}>April</MenuItem>
+                          <MenuItem value={5}>May</MenuItem>
+                          <MenuItem value={6}>June</MenuItem>
+                          <MenuItem value={7}>July</MenuItem>
+                          <MenuItem value={8}>August</MenuItem>
+                          <MenuItem value={9}>September</MenuItem>
+                          <MenuItem value={10}>October</MenuItem>
+                          <MenuItem value={11}>November</MenuItem>
+                          <MenuItem value={12}>December</MenuItem>
+                        </SmartSelect>
+                      </Grid>
+                    </>
+                  )}
+
+                  <Grid item xs={12} md={6}>
+                    <SmartSelect
+                      label="Interest Payment Destination"
+                      fullWidth
+                      selectProps={{
+                        value: (formData as any).interest_payment_destination || 'Same_Account',
+                        onChange: (e) => handleInputChange('interest_payment_destination', e.target.value),
+                      }}
+                    >
+                      {interestPaymentDestinationOptions.map(option => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </SmartSelect>
+                  </Grid>
+
+                  {/* Conditional account selector for Other_Account_Same_Bank */}
+                  {(formData as any).interest_payment_destination === 'Other_Account_Same_Bank' && (
+                    <Grid item xs={12} md={6}>
+                      <SmartSelect
+                        label="Payment Account"
+                        fullWidth
+                        selectProps={{
+                          value: (formData as any).interest_payment_account_id || '',
+                          onChange: (e) => handleInputChange('interest_payment_account_id', e.target.value),
+                        }}
+                      >
+                        {deposits
+                          .filter(d => d.bank === formData.bank && d.id !== formData.id && d.is_active)
+                          .map(deposit => (
+                            <MenuItem key={deposit.id} value={deposit.id}>
+                              {deposit.account_name || deposit.type} - {deposit.sub_type}
+                            </MenuItem>
+                          ))}
+                      </SmartSelect>
+                    </Grid>
+                  )}
+
+                  {/* Conditional account selector for Designated_Account */}
+                  {(formData as any).interest_payment_destination === 'Designated_Account' && (
+                    <Grid item xs={12} md={6}>
+                      <SmartSelect
+                        label="Designated Account"
+                        fullWidth
+                        selectProps={{
+                          value: (formData as any).designated_account_id || '',
+                          onChange: (e) => handleInputChange('designated_account_id', e.target.value),
+                        }}
+                      >
+                        {deposits
+                          .filter(d => d.type === 'Current' && d.is_active)
+                          .map(deposit => (
+                            <MenuItem key={deposit.id} value={deposit.id}>
+                              {deposit.bank} - {deposit.account_name || 'Current Account'}
+                            </MenuItem>
+                          ))}
+                      </SmartSelect>
+                    </Grid>
+                  )}
+
+
                   <Grid item xs={12} md={6}>
                     <SmartTextField
                       label="Minimum Deposit"

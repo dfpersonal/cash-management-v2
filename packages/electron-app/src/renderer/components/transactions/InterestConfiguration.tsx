@@ -30,9 +30,10 @@ interface InterestConfigurationProps {
 
 const paymentTypes: { value: InterestPaymentType; label: string; description: string }[] = [
   { value: 'Monthly', label: 'Monthly', description: 'Interest paid on the same day each month' },
+  { value: 'Quarterly', label: 'Quarterly', description: 'Interest paid every 3 months' },
   { value: 'Annually', label: 'Annually', description: 'Interest paid once per year' },
-  { value: 'Fixed_Date', label: 'Fixed Date', description: 'Interest paid on specific day/month each year (e.g., 5th April)' },
-  { value: 'At_Maturity', label: 'At Maturity', description: 'Single interest payment when term deposit matures' },
+  { value: 'Fixed_Date', label: 'Fixed Date Each Year', description: 'Interest paid on specific day/month each year (e.g., 5th April)' },
+  { value: 'At_Maturity', label: 'At End of Term/Notice', description: 'Single interest payment at the end of the term or notice period' },
 ];
 
 const paymentDestinations: { value: InterestPaymentDestination; label: string; description: string }[] = [
@@ -142,7 +143,7 @@ export const InterestConfiguration: React.FC<InterestConfigurationProps> = ({
       }
     }
 
-    if (config.interest_payment_type === 'Monthly' || config.interest_payment_type === 'Annually') {
+    if (config.interest_payment_type === 'Monthly' || config.interest_payment_type === 'Quarterly' || config.interest_payment_type === 'Annually') {
       if (!config.interest_next_payment_date) {
         setError('Please specify the next payment date');
         return false;
@@ -245,8 +246,8 @@ export const InterestConfiguration: React.FC<InterestConfigurationProps> = ({
           </FormHelperText>
         </FormControl>
 
-        {/* Monthly/Annually - Show next payment date picker */}
-        {(config.interest_payment_type === 'Monthly' || config.interest_payment_type === 'Annually') && (
+        {/* Monthly/Quarterly/Annually - Show next payment date picker */}
+        {(config.interest_payment_type === 'Monthly' || config.interest_payment_type === 'Quarterly' || config.interest_payment_type === 'Annually') && (
           <TextField
             label="Next Payment Date"
             type="date"
@@ -288,10 +289,10 @@ export const InterestConfiguration: React.FC<InterestConfigurationProps> = ({
           </Stack>
         )}
 
-        {/* At Maturity - Show maturity date info */}
+        {/* At End of Term/Notice - Show maturity/notice end date info */}
         {config.interest_payment_type === 'At_Maturity' && account.term_ends && (
           <Alert severity="info">
-            Interest will be paid when the term ends on {new Date(account.term_ends).toLocaleDateString('en-GB')}
+            Interest will be paid when the term/notice period ends on {new Date(account.term_ends).toLocaleDateString('en-GB')}
           </Alert>
         )}
 

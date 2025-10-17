@@ -24,10 +24,9 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { PortfolioHolding, AppState, Deposit } from '@cash-mgmt/shared';
-import { Transaction, TransactionForm, InterestConfiguration } from '@cash-mgmt/shared';
+import { Transaction, TransactionForm } from '@cash-mgmt/shared';
 import { TransactionList } from '../components/transactions/TransactionList';
 import { TransactionEntry } from '../components/transactions/TransactionEntry';
-import { InterestConfiguration as InterestConfigurationComponent } from '../components/transactions/InterestConfiguration';
 import { ReconciliationWizard } from '../components/reconciliation/ReconciliationWizard';
 
 interface HoldingsProps {
@@ -140,27 +139,6 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
       setEditingTransaction(null);
     } catch (err: any) {
       throw new Error(err.message || 'Failed to save transaction');
-    }
-  };
-
-  // Handle interest configuration save
-  const handleSaveInterestConfig = async (config: InterestConfiguration) => {
-    if (!selectedAccount || selectedAccount.id === undefined) return;
-
-    try {
-      await window.electronAPI.updateInterestConfiguration(selectedAccount.id, config);
-
-      // Refresh account data
-      const updatedDeposits = await window.electronAPI.getAllDeposits();
-      setDeposits(updatedDeposits);
-
-      // Update selected account
-      const updatedAccount = updatedDeposits.find((d: Deposit) => d.id === selectedAccount.id);
-      if (updatedAccount) {
-        setSelectedAccount(updatedAccount);
-      }
-    } catch (err: any) {
-      throw new Error(err.message || 'Failed to save interest configuration');
     }
   };
 
@@ -295,7 +273,6 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
                 <Tabs value={accountDetailTab} onChange={(_, newValue) => setAccountDetailTab(newValue)}>
                   <Tab label="Account Info" />
                   <Tab label="Transactions" />
-                  <Tab label="Interest Configuration" />
                 </Tabs>
               </Box>
 
@@ -390,14 +367,6 @@ export const Holdings: React.FC<HoldingsProps> = ({ appState }) => {
                     onStartReconciliation={handleOpenReconciliation}
                   />
                 )}
-              </TabPanel>
-
-              <TabPanel value={accountDetailTab} index={2}>
-                <InterestConfigurationComponent
-                  account={selectedAccount as any}
-                  onSave={handleSaveInterestConfig}
-                  allAccounts={deposits}
-                />
               </TabPanel>
             </>
           )}

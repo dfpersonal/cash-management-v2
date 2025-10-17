@@ -115,7 +115,20 @@ export class InterestPaymentService {
         const endOfMonth = new Date(transactionDate.getFullYear(), transactionDate.getMonth() + 1, 0);
         const daysDiff = Math.abs(endOfMonth.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24);
         return daysDiff <= 3;
-        
+
+      case 'Quarterly':
+        // Check if it's near quarterly anniversary (every 3 months from deposit date)
+        if (account.deposit_date) {
+          const depositDate = new Date(account.deposit_date);
+          const monthsDiff = (transactionDate.getFullYear() - depositDate.getFullYear()) * 12
+                           + (transactionDate.getMonth() - depositDate.getMonth());
+          // Check if it's a multiple of 3 months and within 3 days
+          if (monthsDiff % 3 === 0) {
+            return Math.abs(transactionDate.getDate() - depositDate.getDate()) <= 3;
+          }
+        }
+        return false;
+
       case 'Annually':
         // Check if it's near anniversary
         if (account.deposit_date) {
@@ -156,10 +169,12 @@ export class InterestPaymentService {
    */
   private getDaysInPeriod(account: Deposit): number {
     const paymentType = (account as any).interest_payment_type as InterestPaymentType;
-    
+
     switch (paymentType) {
       case 'Monthly':
         return 30; // Approximate - could be more precise
+      case 'Quarterly':
+        return 90; // Approximately 3 months
       case 'Annually':
         return 365;
       case 'Fixed_Date':
@@ -212,7 +227,18 @@ export class InterestPaymentService {
         // Default to end of current month
         const today = new Date();
         return new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      
+
+      case 'Quarterly':
+        if (account.interest_next_payment_date) {
+          const nextDate = new Date(account.interest_next_payment_date);
+          nextDate.setMonth(nextDate.getMonth() + 3);
+          return nextDate;
+        }
+        // Default to 3 months from today
+        const quarterly = new Date();
+        quarterly.setMonth(quarterly.getMonth() + 3);
+        return quarterly;
+
       case 'Annually':
         if (account.interest_next_payment_date) {
           const nextDate = new Date(account.interest_next_payment_date);

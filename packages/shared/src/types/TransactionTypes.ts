@@ -127,7 +127,7 @@ export interface ReconciliationWizardState {
 // INTEREST PAYMENT TYPES
 // ============================================
 
-export type InterestPaymentType = 'Monthly' | 'Annually' | 'Fixed_Date' | 'At_Maturity';
+export type InterestPaymentType = 'Monthly' | 'Quarterly' | 'Annually' | 'Fixed_Date' | 'At_Maturity';
 export type InterestPaymentDestination = 'Same_Account' | 'Other_Account_Same_Bank' | 'Designated_Account';
 
 export interface InterestConfiguration {
@@ -172,6 +172,7 @@ export interface InterestVarianceAnalysis {
 export interface InterestEventConfig {
   enabled: boolean;
   include_monthly: boolean;
+  include_quarterly: boolean;
   include_annual: boolean;
   include_fixed_date: boolean;
   include_maturity: boolean;
@@ -298,12 +299,13 @@ export function getTransactionTypeColor(type: TransactionType): string {
 // Helper function to format interest payment type
 export function formatInterestPaymentType(type?: InterestPaymentType): string {
   if (!type) return 'Not configured';
-  
+
   const typeMap: Record<InterestPaymentType, string> = {
     'Monthly': 'Monthly',
+    'Quarterly': 'Quarterly',
     'Annually': 'Annually',
     'Fixed_Date': 'Fixed Date Each Year',
-    'At_Maturity': 'At Maturity'
+    'At_Maturity': 'At End of Term/Notice'
   };
   return typeMap[type] || type;
 }

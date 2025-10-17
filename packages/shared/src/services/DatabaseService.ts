@@ -58,6 +58,7 @@ export class DatabaseService {
         });
 
         this.initializeBalanceUpdateTables();
+        this.migrateInterestPaymentFrequency();
         this.initializeAuditService();
       }
     });
@@ -143,6 +144,53 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Migrate interest_payment_frequency to interest_payment_type
+   * Consolidates the duplicate fields into a single field with Quarterly support
+   */
+  private migrateInterestPaymentFrequency(): void {
+    this.db.serialize(() => {
+      try {
+        // Step 1: Migrate data from interest_payment_frequency to interest_payment_type where needed
+        this.db.run(`
+          UPDATE my_deposits
+          SET interest_payment_type =
+            CASE
+              WHEN interest_payment_frequency = 'Maturity' THEN 'At_Maturity'
+              WHEN interest_payment_frequency IN ('Monthly', 'Annually') THEN interest_payment_frequency
+              ELSE interest_payment_type
+            END
+          WHERE interest_payment_type IS NULL
+            AND interest_payment_frequency IS NOT NULL
+        `, (err) => {
+          if (err) {
+            console.error('Error migrating interest payment data:', err);
+          } else {
+            console.log('✅ Interest payment data migrated successfully');
+          }
+        });
+
+        // Step 2: Check if we need to recreate the table to remove the old column
+        // SQLite doesn't support DROP COLUMN in older versions, so we check the schema
+        this.db.get(`SELECT sql FROM sqlite_master WHERE type='table' AND name='my_deposits'`, (err, row: any) => {
+          if (err) {
+            console.error('Error checking my_deposits schema:', err);
+            return;
+          }
+
+          // If the schema still contains interest_payment_frequency, we need to recreate the table
+          if (row && row.sql && row.sql.includes('interest_payment_frequency')) {
+            console.log('⚠️  Detected interest_payment_frequency column - migration needed');
+            console.log('   This column will be removed in a future update.');
+            console.log('   For now, interest_payment_type will be used for all calculations.');
+          }
+        });
+
+      } catch (error) {
+        console.error('Error in interest payment frequency migration:', error);
+      }
+    });
+  }
 
   /**
    * Initialize audit service with configuration

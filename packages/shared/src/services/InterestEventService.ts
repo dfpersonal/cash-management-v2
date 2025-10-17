@@ -46,6 +46,7 @@ export class InterestEventService {
           const key = row.config_key.replace('interest_events_', '').replace('interest_event_', '');
           if (key === 'enabled') config.enabled = value;
           else if (key === 'monthly') config.include_monthly = value;
+          else if (key === 'quarterly') config.include_quarterly = value;
           else if (key === 'annual') config.include_annual = value;
           else if (key === 'fixed_date') config.include_fixed_date = value;
           else if (key === 'maturity') config.include_maturity = value;
@@ -56,6 +57,7 @@ export class InterestEventService {
         resolve({
           enabled: config.enabled ?? true,
           include_monthly: config.include_monthly ?? false,
+          include_quarterly: config.include_quarterly ?? false,
           include_annual: config.include_annual ?? true,
           include_fixed_date: config.include_fixed_date ?? true,
           include_maturity: config.include_maturity ?? true,
@@ -104,6 +106,8 @@ export class InterestEventService {
     switch(paymentType) {
       case 'Monthly':
         return config.include_monthly;
+      case 'Quarterly':
+        return config.include_quarterly;
       case 'Annually':
         return config.include_annual;
       case 'Fixed_Date':
@@ -181,6 +185,8 @@ export class InterestEventService {
     switch(account.interest_payment_type) {
       case 'Monthly':
         return `Monthly interest from ${account.bank} due soon`;
+      case 'Quarterly':
+        return `Quarterly interest from ${account.bank} due soon`;
       case 'Annually':
         return `Annual interest from ${account.bank} due soon`;
       case 'Fixed_Date':
@@ -526,6 +532,22 @@ export class InterestEventService {
         while (monthlyDate <= endDate) {
           dates.push(new Date(monthlyDate));
           monthlyDate.setMonth(monthlyDate.getMonth() + 1);
+        }
+        break;
+
+      case 'Quarterly':
+        // Calculate quarterly payment dates - every 3 months
+        if (account.deposit_date) {
+          const depositDate = new Date(account.deposit_date);
+          let quarterlyDate = new Date(depositDate);
+          // Find the first quarterly payment after deposit date
+          while (quarterlyDate < today) {
+            quarterlyDate.setMonth(quarterlyDate.getMonth() + 3);
+          }
+          while (quarterlyDate <= endDate) {
+            dates.push(new Date(quarterlyDate));
+            quarterlyDate.setMonth(quarterlyDate.getMonth() + 3);
+          }
         }
         break;
 

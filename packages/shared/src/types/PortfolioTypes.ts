@@ -72,14 +72,11 @@ export interface Deposit {
   reference?: string;
   designated_account?: string;
   aer?: number;
-  notice_period?: string;
   notice_period_days?: number;
-  term?: string;
   term_months?: number;
   deposit_date?: string;
   term_ends?: string;
   balance?: number;
-  interest_payment_frequency?: string;
   min_deposit?: number;
   max_deposit?: number;
   liquidity_tier?: string;
